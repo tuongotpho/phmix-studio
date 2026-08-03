@@ -31,13 +31,14 @@ env:
 
   # Thông báo đăng ký mới qua Telegram (notifier.ts). Tạo secret trước khi deploy:
   #   firebase apphosting:secrets:set TELEGRAM_BOT_TOKEN --project phmix-studio
-  #   firebase apphosting:secrets:set TELEGRAM_CHAT_ID --project phmix-studio
   - variable: TELEGRAM_BOT_TOKEN
     secret: TELEGRAM_BOT_TOKEN
     availability:
       - RUNTIME
 
+  # ID phòng chat, không phải credential nên để giá trị thường. Buộc kiểu chuỗi
+  # bằng dấu nháy: không có nháy thì YAML đọc thành số âm.
   - variable: TELEGRAM_CHAT_ID
-    secret: TELEGRAM_CHAT_ID
+    value: "-5058192283"
     availability:
       - RUNTIME
