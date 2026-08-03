@@ -89,6 +89,43 @@ export function isAdminEmail(email: string | undefined): boolean {
   return email.toLowerCase() === adminEmail.toLowerCase();
 }
 
+/**
+ * Token hỏng phía người dùng — chuyện thường ngày (hết hạn, khách vãng lai, token
+ * bị sửa). Không log để khỏi ngập Cloud Run logs.
+ */
+const EXPECTED_TOKEN_ERRORS = new Set([
+  'ERR_JWT_EXPIRED',
+  'ERR_JWS_SIGNATURE_VERIFICATION_FAILED',
+  'ERR_JWS_INVALID',
+  'ERR_JWT_INVALID'
+]);
+
+// Lỗi hạ tầng lặp lại ở MỌI request, nên chỉ log lại sau mỗi 60s cho từng mã lỗi.
+const tokenErrorLoggedAt = new Map<string, number>();
+const TOKEN_ERROR_LOG_INTERVAL_MS = 60_000;
+
+/**
+ * Phân biệt "token của người dùng không hợp lệ" với "hệ thống đang hỏng".
+ *
+ * Trước đây khối catch ở đây rỗng kèm comment "Ignore JWKS verify error", nên một
+ * URL JWKS sai đã âm thầm hạ MỌI tài khoản xuống 'guest' và tắt tính năng PRO/admin
+ * mà không để lại dấu vết nào trong log.
+ */
+function reportTokenVerifyFailure(err: unknown): void {
+  const code = (err as any)?.code || (err as any)?.name || 'UNKNOWN';
+  if (EXPECTED_TOKEN_ERRORS.has(code)) return;
+
+  const now = Date.now();
+  if (now - (tokenErrorLoggedAt.get(code) ?? 0) < TOKEN_ERROR_LOG_INTERVAL_MS) return;
+  tokenErrorLoggedAt.set(code, now);
+
+  console.error(
+    `[Auth] Không verify được ID token do lỗi hạ tầng (${code}): ${(err as any)?.message}. ` +
+    'Trong khi lỗi này còn, MỌI tài khoản đều bị hạ xuống "guest" và tính năng PRO/admin ngừng hoạt động. ' +
+    'Kiểm tra endpoint JWKS và FIREBASE_PROJECT_ID (xem GET /ping).'
+  );
+}
+
 export async function verifyAndGetUid(
   idToken: string,
   projectId: string
@@ -111,8 +148,8 @@ export async function verifyAndGetUid(
         admin: payload.admin === true
       };
     }
-  } catch {
-    // Ignore JWKS verify error
+  } catch (err) {
+    reportTokenVerifyFailure(err);
   }
 
   return null;
