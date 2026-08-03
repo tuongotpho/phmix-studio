@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "User account status and subscription information",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "The user's Google account email address"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name from Google"
+        },
+        "status": {
+          "type": "string",
+          "description": "The user's role status (pending, pro, 6_months, 1_year, lifetime, admin)",
+          "enum": ["pending", "pro", "6_months", "1_year", "lifetime", "admin"]
+        },
+        "createdAt": {
+          "type": "object",
+          "description": "Server timestamp of creation"
+        }
+      },
+      "required": ["email", "status"]
+    },
+    "question": {
+      "title": "Question",
+      "description": "Question bank item",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string" },
+        "teacherEmail": { "type": "string" },
+        "contentHtml": { "type": "string" },
+        "options": { "type": "array" },
+        "correctAnswer": { "type": "string" },
+        "explanation": { "type": "string" },
+        "partType": { "type": "string" },
+        "classification": { "type": "object" },
+        "isPublic": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["teacherId", "contentHtml"]
+    },
+    "exam": {
+      "title": "Exam",
+      "description": "Exam repository item",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string" },
+        "teacherEmail": { "type": "string" },
+        "title": { "type": "string" },
+        "totalQuestions": { "type": "number" },
+        "questionIds": { "type": "array" },
+        "classification": { "type": "object" },
+        "matrixSummary": { "type": "object" },
+        "isPublic": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["teacherId", "title"]
+    },
+    "curriculum": {
+      "title": "Curriculum Item",
+      "description": "Custom flexible SGK tree category",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "parentId": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["name", "type"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "user",
+      "description": "Individual user document indexed by UID"
+    },
+    "questions/{questionId}": {
+      "schema": "question",
+      "description": "Individual questions stored in bank"
+    },
+    "exams/{examId}": {
+      "schema": "exam",
+      "description": "Saved exam documents"
+    },
+    "curriculums/{curriculumId}": {
+      "schema": "curriculum",
+      "description": "Teacher custom category items"
+    }
+  }
+}

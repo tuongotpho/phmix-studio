@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pH-mix - Trộn Đề & Ngân Hàng Câu Hỏi Thông Minh cho Giáo Viên</title>
+    <meta name="description" content="pH-mix giúp giáo viên trộn đề thi trắc nghiệm trực tuyến, quản lý ngân hàng câu hỏi, lắp ráp đề thi từ kho riêng, giữ nguyên 100% MathType & hình ảnh, xuất QR chấm điểm TNMaker.">
+    
+    <!-- Open Graph for Social Sharing -->
+    <meta property="og:title" content="pH-mix - Trộn Đề & Ngân Hàng Câu Hỏi Pro">
+    <meta property="og:description" content="Trộn đề thi chuẩn 3 phần Bộ GD&ĐT, quản lý ngân hàng câu hỏi cá nhân, lắp ráp đề từ kho riêng, xuất QR chấm điểm TNMaker. Giữ nguyên 100% MathType & hình ảnh.">
+    <meta property="og:type" content="website">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="/shuffle.png">
+</head>
+<body>
+    <!-- Background glow decoration -->
+    <div class="glow-bg">
+        <div class="glow-1"></div>
+        <div class="glow-2"></div>
+    </div>
+
+    <!-- Navigation Header -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-logo" id="logo-link">
+                <span class="logo-icon">🧪</span>
+                <span class="logo-text">pH-mix</span>
+            </a>
+            
+            <ul class="nav-menu" id="nav-menu">
+                <li><a href="#features" class="nav-link">Tính năng</a></li>
+                <li><a href="#comparison" class="nav-link">So sánh</a></li>
+                <li><a href="/tron-de" class="nav-link">Trộn Đề Online</a></li>
+                <li><a href="#pricing" class="nav-link">Bảng giá</a></li>
+                <li><a href="#faq" class="nav-link">Hỏi đáp</a></li>
+            </ul>
+            
+            <div class="nav-actions">
+                <a href="#pricing" class="btn btn-primary btn-sm" id="nav-cta">
+                    <span>⚡ Nhận Bản Quyền</span>
+                </a>
+            </div>
+            
+            <button class="menu-toggle" id="menu-toggle" aria-label="Toggle Menu">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </button>
+        </div>
+    </nav>
+
+    <main id="main-content">
+    <!-- Hero Section -->
+    <section class="hero-section" id="hero">
+        <div class="section-container hero-container">
+            <div class="hero-content">
+                <div class="badge">🔥 Bộ công cụ đề thi toàn diện cho giáo viên</div>
+                <h1 class="hero-title">Trộn đề & Ngân hàng câu hỏi <span class="text-gradient">Thông minh - Bảo toàn MathType</span></h1>
+                <p class="hero-description">
+                    Nền tảng trực tuyến toàn diện giúp giáo viên trộn đề thi chuẩn 3 phần Bộ GD&ĐT, xây dựng ngân hàng câu hỏi cá nhân, lắp ráp đề từ kho riêng và xuất QR chấm điểm TNMaker — tất cả trong một ứng dụng duy nhất.
+                </p>
+                <div class="hero-btns">
+                    <a href="/tron-de" class="btn btn-highlight btn-lg" id="hero-demo-btn">
+                        <span>🧪 Trộn Đề Trực Tiếp</span>
+                    </a>
+                    <a href="#pricing" class="btn btn-secondary btn-lg" id="hero-download-btn">
+                        <span>📥 Xem Bảng Giá PRO</span>
+                    </a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-val">100%</span>
+                        <span class="stat-lbl">Giữ nguyên MathType</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-val">3 Phần</span>
+                        <span class="stat-lbl">Chuẩn Bộ GD&ĐT</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-val">4-in-1</span>
+                        <span class="stat-lbl">Trộn · Kho · Lắp ráp · QR</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hero-preview">
+                <!-- Interactive App Mockup built in pure CSS -->
+                <div class="app-mockup" id="interactive-app-mockup">
+                    <div class="mockup-header">
+                        <div class="mockup-dots">
+                            <span class="dot-red"></span>
+                            <span class="dot-yellow"></span>
+                            <span class="dot-green"></span>
+                        </div>
+                        <div class="mockup-title">pH-mix v2.7 - Trộn Đề · Ngân Hàng · Lắp Ráp</div>
+                    </div>
+                    <div class="mockup-tabs">
+                        <div class="mockup-tab-item active">🧪 Trộn Đề</div>
+                        <div class="mockup-tab-item">📚 Ngân Hàng</div>
+                        <div class="mockup-tab-item">🧩 Lắp Ráp Đề</div>
+                        <div class="mockup-tab-item">🛡️ Quản Trị</div>
+                    </div>
+                    <div class="mockup-body">
+                        <div class="mockup-workspace">
+                            <!-- Step 1 -->
+                            <div>
+                                <div class="mockup-step-title">Bước 1: Tải lên đề gốc (.docx)</div>
+                                <div class="mockup-card select-card">
+                                    <div class="card-icon">📄</div>
+                                    <div class="card-info">
+                                        <span class="card-title-text">De_Thi_Goc_Hoa_Hoc_12.docx</span>
+                                        <span class="card-sub-text">🟢 Tải lên thành công (Đề 3 phần chuẩn Bộ GD&ĐT)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Step 2 -->
+                            <div>
+                                <div class="mockup-step-title">Bước 2: Cấu hình mã đề & Cách chia cột</div>
+                                <div class="mockup-params">
+                                    <div class="param-input">
+                                        <label>Số mã đề cần tạo</label>
+                                        <div class="number-box">4 đề thi</div>
+                                    </div>
+                                    <div class="param-input">
+                                        <label>Cách chia cột phương án</label>
+                                        <div class="number-box">Tự động co giãn (Tiết kiệm giấy)</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 3 -->
+                            <div class="mockup-action-wrapper">
+                                <button class="mockup-btn mockup-btn-primary-purple" id="mockup-shuffle-trigger">
+                                    ⚡ BẮT ĐẦU TRỘN ĐỀ PRO
+                                </button>
+                            </div>
+                            
+                            <!-- Step 4 -->
+                            <div>
+                                <div class="mockup-step-title">Bước 3: Tùy chọn xáo trộn nâng cao</div>
+                                <div class="mockup-options-row">
+                                    <div class="mockup-options-row-item">
+                                        <span class="chk-box checked">✓</span> Đảo câu hỏi từng phần
+                                    </div>
+                                    <div class="mockup-options-row-divider"></div>
+                                    <div class="mockup-options-row-item">
+                                        <span class="chk-box checked">✓</span> Đảo A, B, C, D (Phần I)
+                                    </div>
+                                    <div class="mockup-options-row-divider"></div>
+                                    <div class="mockup-options-row-item">
+                                        <span class="chk-box checked">✓</span> Đảo Đúng/Sai (Phần II)
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Step 5 -->
+                            <div class="mockup-progress-wrapper">
+                                <!-- Shuffling Simulation progress -->
+                                <div class="mockup-progress" id="mockup-progress-bar" style="display: none;">
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar-val" style="width: 100%"></div>
+                                    </div>
+                                    <span class="progress-lbl">🎉 Đã tạo thành công 4 đề! Đã xuất: Word Đề thi, Đáp án Azota, Excel TNMaker.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Core Features Section -->
+    <section class="features-section" id="features">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-badge">TÍNH NĂNG ĐỘT PHÁ</span>
+                <h2 class="section-title-main">Tại sao giáo viên chọn pH-mix?</h2>
+                <p class="section-subtitle">Bộ công cụ toàn diện — từ trộn đề, xây dựng ngân hàng câu hỏi đến lắp ráp đề thi và chấm điểm tự động. Tất cả trong một nền tảng duy nhất.</p>
+            </div>
+            
+            <div class="features-grid">
+                <!-- Feature 1 -->
+                <div class="feature-card">
+                    <div class="feature-icon">📐</div>
+                    <h3>Bảo toàn MathType 100%</h3>
+                    <p>Xử lý trực tiếp trên cấu trúc file Word (.docx), giữ nguyên hoàn toàn mọi công thức MathType, hình vẽ, đồ thị và bảng biểu — không bao giờ lo nhảy dòng hay vỡ công thức.</p>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="feature-card">
+                    <div class="feature-icon">📚</div>
+                    <h3>Ngân hàng câu hỏi cá nhân</h3>
+                    <p>Import đề Word lên kho cá nhân, phân loại theo Môn · Khối · Chương · Bài · Độ khó. Chỉnh sửa metadata từng câu hỏi ngay trên trình duyệt, tìm kiếm và lọc tức thì.</p>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="feature-card">
+                    <div class="feature-icon">🧩</div>
+                    <h3>Lắp ráp đề từ kho riêng</h3>
+                    <p>Chọn câu hỏi từ ngân hàng cá nhân để tự lắp ráp một đề thi mới, sau đó trộn và xuất toàn bộ bộ mã đề hoàn chỉnh kèm bảng đáp án và file chấm điểm.</p>
+                </div>
+                
+                <!-- Feature 4 -->
+                <div class="feature-card">
+                    <div class="feature-icon">📋</div>
+                    <h3>Chuẩn cấu trúc 3 phần mới</h3>
+                    <p>Trộn đề chuẩn định dạng Bộ GD&ĐT: Phần I (Trắc nghiệm 4 lựa chọn), Phần II (Đúng/Sai mệnh đề), Phần III (Trả lời ngắn). Đảo câu hỏi, đảo A·B·C·D, đảo mệnh đề độc lập.</p>
+                </div>
+                
+                <!-- Feature 5 -->
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3>QR chấm điểm TNMaker</h3>
+                    <p>Tự động sinh QR code và file Excel đáp án chuẩn định dạng TNMaker cho từng mã đề. Giáo viên chỉ cần quét mã QR là chấm điểm ngay trên điện thoại — không nhập tay.</p>
+                </div>
+                
+                <!-- Feature 6 -->
+                <div class="feature-card">
+                    <div class="feature-icon">💵</div>
+                    <h3>Tối ưu giấy in (Tiết kiệm 30%)</h3>
+                    <p>Thuật toán tự động gom 4 phương án A·B·C·D trên cùng dòng nếu đủ ngắn, co giãn khoảng cách thông minh — giảm đáng kể số trang in mà không ảnh hưởng nội dung.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparison Section -->
+    <section class="comparison-section" id="comparison">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-badge">BẢN SO SÁNH</span>
+                <h2 class="section-title-main">Sự khác biệt vượt trội</h2>
+                <p class="section-subtitle">Hãy cùng so sánh các tính năng của pH-mix so với những giải pháp trộn đề thông thường khác.</p>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Tính năng</th>
+                            <th class="highlight">🧪 pH-mix v2.7</th>
+                            <th>McMIX (Miễn phí)</th>
+                            <th>Các nền tảng Web Online</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="feat-name">Trộn đề chuẩn cấu trúc 3 Phần Bộ GD&ĐT</td>
+                            <td class="check highlight">✅ Có đầy đủ</td>
+                            <td class="cross">❌ Không hỗ trợ</td>
+                            <td class="warning">⚠️ Hỗ trợ hạn chế</td>
+                        </tr>
+                        <tr>
+                            <td class="feat-name">Bảo toàn 100% MathType & hình ảnh</td>
+                            <td class="check highlight">✅ Cực tốt (Trực tuyến)</td>
+                            <td class="warning">⚠️ Phải chuyển đổi RTF dễ lỗi</td>
+                            <td class="warning">⚠️ Hay bị lỗi vỡ công thức</td>
+                        </tr>
+                        <tr>
+                            <td class="feat-name">Ngân hàng câu hỏi cá nhân trên đám mây</td>
+                            <td class="check highlight">✅ Import · Phân loại · Tìm kiếm</td>
+                            <td class="cross">❌ Không có</td>
+                            <td class="cross">❌ Không có</td>
+                        </tr>
+                        <tr>
+                            <td class="feat-name">Lắp ráp đề từ kho câu hỏi riêng</td>
+                            <td class="check highlight">✅ Chọn câu → Trộn → Xuất ngay</td>
+                            <td class="cross">❌ Không hỗ trợ</td>
+                            <td class="cross">❌ Rất ít bên hỗ trợ</td>
+                        </tr>
+                        <tr>
+                            <td class="feat-name">QR chấm điểm & Excel TNMaker tự động</td>
+                            <td class="check highlight">✅ Tự động xuất QR + Excel</td>
+                            <td class="cross">❌ Không hỗ trợ</td>
+                            <td class="warning">⚠️ Chỉ xuất 1 loại</td>
+                        </tr>
+                        <tr>
+                            <td class="feat-name">Bản quyền theo Google Account (đa thiết bị)</td>
+                            <td class="check highlight">✅ Linh hoạt trên mọi máy</td>
+                            <td class="cross">❌ Khóa cứng theo thiết bị</td>
+                            <td class="warning">⚠️ Đăng ký phức tạp</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing-section" id="pricing">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-badge">BẢNG GIÁ ƯU ĐÃI</span>
+                <h2 class="section-title-main">Chọn gói phù hợp với nhu cầu</h2>
+                <p class="section-subtitle">Hỗ trợ tối đa cho giáo viên nâng cấp công nghệ dạy học. Mua một lần sử dụng lâu dài, không lo phát sinh chi phí.</p>
+            </div>
+            
+            <div class="pricing-grid">
+                <!-- Plan 1 -->
+                <div class="pricing-card">
+                    <h3 class="plan-name">Gói 6 Tháng</h3>
+                    <div class="plan-price">
+                        <span class="price-number">39.000đ</span>
+                        <span class="price-period">/ 6 tháng</span>
+                    </div>
+                    <p class="plan-desc">Lựa chọn tối ưu và linh hoạt cho một học kỳ giảng dạy.</p>
+                    <ul class="plan-features">
+                        <li>✅ Trộn đề đủ 3 phần chuẩn Bộ GD&ĐT</li>
+                        <li>✅ Ngân hàng câu hỏi cá nhân</li>
+                        <li>✅ Giữ nguyên MathType & Hình ảnh</li>
+                        <li>✅ Xuất QR chấm điểm & Excel TNMaker</li>
+                        <li>✅ Hỗ trợ cập nhật nâng cấp miễn phí</li>
+                        <li>✅ Hỗ trợ kỹ thuật qua Zalo</li>
+                    </ul>
+                    <a href="https://zalo.me/0982722036" target="_blank" rel="noopener noreferrer" class="btn btn-secondary plan-btn">Mua gói 6 tháng</a>
+                </div>
+                
+                <!-- Plan 2 (Popular) -->
+                <div class="pricing-card popular">
+                    <div class="popular-ribbon">PHỔ BIẾN NHẤT</div>
+                    <h3 class="plan-name">Gói 1 Năm</h3>
+                    <div class="plan-price">
+                        <span class="price-number">69.000đ</span>
+                        <span class="price-period">/ năm</span>
+                    </div>
+                    <p class="plan-desc">Giải pháp tiết kiệm nhất cho cả năm học giảng dạy ôn tập đề thi.</p>
+                    <ul class="plan-features">
+                        <li>✅ Trộn đề đủ 3 phần chuẩn Bộ GD&ĐT</li>
+                        <li>✅ Ngân hàng câu hỏi cá nhân không giới hạn</li>
+                        <li>✅ Lắp ráp đề thi từ kho riêng</li>
+                        <li>✅ Xuất QR chấm điểm & Excel TNMaker</li>
+                        <li>✅ Hỗ trợ cập nhật nâng cấp miễn phí</li>
+                        <li>✅ Hỗ trợ kỹ thuật <strong>ƯU TIÊN</strong> qua Zalo</li>
+                    </ul>
+                    <a href="https://zalo.me/0982722036" target="_blank" rel="noopener noreferrer" class="btn btn-primary plan-btn">Mua gói 1 năm</a>
+                </div>
+                
+                <!-- Plan 3 -->
+                <div class="pricing-card">
+                    <h3 class="plan-name">Gói Trọn Đời</h3>
+                    <div class="plan-price">
+                        <span class="price-number">555.000đ</span>
+                        <span class="price-period">/ vĩnh viễn</span>
+                    </div>
+                    <p class="plan-desc">Đầu tư một lần, sở hữu tài khoản PRO vĩnh viễn trên mọi thiết bị của thầy cô.</p>
+                    <ul class="plan-features">
+                        <li>✅ Trộn đề đủ 3 phần chuẩn Bộ GD&ĐT</li>
+                        <li>✅ Ngân hàng câu hỏi cá nhân không giới hạn</li>
+                        <li>✅ Lắp ráp đề thi từ kho riêng</li>
+                        <li>✅ Xuất QR chấm điểm & Excel TNMaker</li>
+                        <li>✅ Tài khoản PRO vĩnh viễn không giới hạn</li>
+                        <li>✅ Cập nhật tính năng mới <strong>trọn đời</strong></li>
+                    </ul>
+                    <a href="https://zalo.me/0982722036" target="_blank" rel="noopener noreferrer" class="btn btn-secondary plan-btn">Mua trọn đời</a>
+                </div>
+            </div>
+            
+            <div class="pricing-notice">
+                💡 <strong>Lưu ý bản quyền:</strong> Bản quyền PRO được kích hoạt trực tiếp theo <strong>Tài khoản Google</strong> đăng nhập của thầy cô, có thể sử dụng linh hoạt và đồng bộ dữ liệu trên mọi thiết bị máy tính.
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section" id="faq">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-badge">HỎI ĐÁP THƯỜNG GẶP</span>
+                <h2 class="section-title-main">Giải đáp thắc mắc cho thầy cô</h2>
+                <p class="section-subtitle">Những câu hỏi phổ biến nhất về cách sử dụng, bảo mật và bản quyền của ứng dụng pH-mix trực tuyến.</p>
+            </div>
+            
+            <div class="faq-accordion">
+                <!-- FAQ 1 -->
+                <div class="accordion-item">
+                    <button class="accordion-header" id="faq-q1" aria-expanded="false">
+                        <span>1. Tôi có cần cài đặt phần mềm pH-mix không?</span>
+                        <span class="icon">+</span>
+                    </button>
+                    <div class="accordion-body">
+                        <p>Không cần cài đặt bất kỳ ứng dụng nào trên máy tính. pH-mix hoạt động hoàn toàn trực tuyến (Online) thông qua trình duyệt web của bạn. Thầy cô chỉ cần truy cập website, đăng nhập bằng tài khoản Google là có thể sử dụng ngay lập tức trên mọi thiết bị (máy tính, laptop, iPad, điện thoại...).</p>
+                    </div>
+                </div>
+                
+                <!-- FAQ 2 -->
+                <div class="accordion-item">
+                    <button class="accordion-header" id="faq-q2" aria-expanded="false">
+                        <span>2. Làm sao để kích hoạt bản quyền PRO?</span>
+                        <span class="icon">+</span>
+                    </button>
+                    <div class="accordion-body">
+                        <p>Thầy cô chỉ cần đăng nhập tài khoản Google trực tiếp trên trang web pH-mix, sau đó liên hệ qua Zalo gửi địa chỉ Email đăng nhập cho thầy Thanh để được phê duyệt kích hoạt quyền truy cập các gói PRO (6 Tháng, 1 Năm, Trọn Đời) cực kỳ nhanh chóng và tiện lợi.</p>
+                    </div>
+                </div>
+                
+                <!-- FAQ 3 -->
+                <div class="accordion-item">
+                    <button class="accordion-header" id="faq-q3" aria-expanded="false">
+                        <span>3. MathType và hình ảnh trong file Word có bị lỗi không?</span>
+                        <span class="icon">+</span>
+                    </button>
+                    <div class="accordion-body">
+                        <p>Không. pH-mix sử dụng thuật toán xử lý file Word cấu trúc mở `.docx` chuyên sâu và trực tiếp. Mọi công thức MathType dạng nhúng, hình vẽ dạng Shapes, các biểu đồ hay bảng biểu phức tạp đều được giữ nguyên 100% định dạng, tỷ lệ và vị trí gốc sau khi trộn đề.</p>
+                    </div>
+                </div>
+                
+                <!-- FAQ 4 -->
+                <div class="accordion-item">
+                    <button class="accordion-header" id="faq-q4" aria-expanded="false">
+                        <span>4. Tính năng tiết kiệm giấy in hoạt động như thế nào?</span>
+                        <span class="icon">+</span>
+                    </button>
+                    <div class="accordion-body">
+                        <p>Thông thường, các phần mềm khác sẽ xuất 4 phương án A, B, C, D trên 4 dòng riêng biệt làm đề thi dài ra. pH-mix tích hợp thuật toán phân tích độ dài ký tự của từng phương án: Nếu ngắn sẽ tự động xếp trên 1 dòng (A. B. C. D.), nếu dài vừa phải xếp trên 2 dòng (A. B. và C. D.), giúp thu gọn tối đa các dòng trống dư thừa, tiết kiệm rất nhiều trang giấy in.</p>
+                    </div>
+                </div>
+
+                <!-- FAQ 5 -->
+                <div class="accordion-item">
+                    <button class="accordion-header" id="faq-q5" aria-expanded="false">
+                        <span>5. Ngân hàng câu hỏi hoạt động như thế nào?</span>
+                        <span class="icon">+</span>
+                    </button>
+                    <div class="accordion-body">
+                        <p>Thầy cô có thể import file Word đề thi lên kho cá nhân — hệ thống tự động trích xuất từng câu hỏi và lưu vào Ngân hàng trên đám mây (Firestore). Sau đó có thể phân loại theo Môn · Khối · Chương · Bài · Độ khó, chỉnh sửa metadata từng câu ngay trên trình duyệt, tìm kiếm và lọc câu hỏi, rồi chọn câu để <strong>lắp ráp đề thi mới</strong> và trộn xuất hoàn chỉnh.</p>
+                    </div>
+                </div>
+
+                <!-- FAQ 6 -->
+                <div class="accordion-item">
+                    <button class="accordion-header" id="faq-q6" aria-expanded="false">
+                        <span>6. Dữ liệu đề thi của tôi có được bảo mật không?</span>
+                        <span class="icon">+</span>
+                    </button>
+                    <div class="accordion-body">
+                        <p>Có, bảo mật tuyệt đối. File Word tải lên để trộn đề chỉ xử lý trong phiên làm việc và không lưu trữ vĩnh viễn trên máy chủ. Câu hỏi trong ngân hàng cá nhân được bảo vệ bởi Firebase Security Rules — mặc định <strong>chỉ chủ sở hữu</strong> mới có thể đọc/ghi, không ai khác truy cập được nếu không được chủ động chia sẻ.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="cta-section">
+        <div class="section-container cta-container">
+            <h2 class="cta-title">Sẵn sàng nâng cao năng suất trộn đề thi?</h2>
+            <p class="cta-desc">Hãy trải nghiệm trộn đề trực tuyến miễn phí hoặc đăng ký mua bản quyền ngay hôm nay để tiết kiệm thời gian và chi phí chuẩn bị đề thi.</p>
+            <div class="cta-actions">
+                <a href="/tron-de" class="btn btn-highlight btn-lg">
+                    <span>🧪 Trộn Đề Trực Tiếp</span>
+                </a>
+                <a href="https://zalo.me/0982722036" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-lg">
+                    <span>💬 Nhận Tư Vấn Zalo</span>
+                </a>
+            </div>
+        </div>
+    </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="section-container footer-container">
+            <div class="footer-brand">
+                <div class="footer-logo">
+                    <span class="logo-icon">🧪</span>
+                    <span class="logo-text">pH-mix</span>
+                </div>
+                <p>Hệ thống trộn đề thi trắc nghiệm thông minh trực tuyến tối ưu hàng đầu cho giáo viên Việt Nam.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Liên hệ tác giả</h4>
+                <ul>
+                    <li>👨‍🏫 Tác giả: Thầy Thanh</li>
+                    <li>💬 Zalo hỗ trợ: 0982.722.036</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 pH-mix. Bản quyền thuộc về thầy Thanh & đội ngũ phát triển.</p>
+        </div>
+    </footer>
+
+    <!-- App Script -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>

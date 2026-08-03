@@ -1,0 +1,70 @@
+/*
+ * pH-mix CSS Variables & Base Resets
+ */
+
+:root {
+    --bg: #F8F7F4;       /* Warm light paper background */
+    --ink: #1A1A1A;      /* Deep rich charcoal black */
+    --accent: #E63946;   /* Crimson red accent */
+    --accent-hover: #C52233;
+    --border-color: #1A1A1A;
+    --success-color: #10B981;
+    --error-color: #E63946;
+    --ink-faint: rgba(26, 26, 26, 0.12);
+    --font-heading: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+}
+
+::selection {
+    background: var(--accent);
+    color: #FFFFFF;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    background-color: #EEEBE6; /* off-white paper desk background */
+    color: var(--ink);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+@media (min-height: 600px) and (min-width: 768px) {
+    body {
+        overflow: hidden; /* No scrolling for the page body on standard desktop screens */
+    }
+}
+
+u {
+    text-decoration: underline !important;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #EEEBE6;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--ink);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+}

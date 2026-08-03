@@ -1,0 +1,385 @@
+/*
+ * pH-mix Landing Page - Hero Section & Interactive Mockup
+ */
+
+.hero-section {
+    padding-top: 150px;
+    position: relative;
+}
+
+.hero-container {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 60px;
+    align-items: center;
+}
+
+.hero-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    line-height: 1.15;
+    margin-bottom: 20px;
+}
+
+.hero-description {
+    color: var(--text-sub);
+    font-size: 1.15rem;
+    margin-bottom: 35px;
+}
+
+.hero-btns {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 50px;
+}
+
+.hero-stats {
+    display: flex;
+    gap: 30px;
+    align-items: center;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-val {
+    font-family: var(--font-heading);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: white;
+}
+
+.stat-lbl {
+    font-size: 0.85rem;
+    color: var(--text-sub);
+}
+
+.stat-divider {
+    width: 1px;
+    height: 40px;
+    background-color: var(--border-color);
+}
+
+/* Outstanding Glowing "Trực Tiếp Trộn Đề" Button */
+#hero-demo-btn {
+    background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    animation: buttonPulseGlow 2.5s infinite ease-in-out;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+}
+
+#hero-demo-btn:hover {
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: 0 0 35px rgba(239, 68, 68, 0.8);
+    filter: brightness(1.05);
+}
+
+/* Interactive App Mockup */
+.app-mockup {
+    background: rgba(16, 12, 35, 0.85);
+    border: 2px solid var(--primary);
+    border-radius: 12px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 30px rgba(139, 92, 246, 0.3);
+    overflow: hidden;
+    backdrop-filter: blur(12px);
+    transition: var(--transition-smooth);
+}
+
+.app-mockup:hover {
+    transform: translateY(-5px);
+    border-color: var(--secondary);
+    box-shadow: 0 25px 60px rgba(0,0,0,0.7), 0 0 40px rgba(217, 70, 239, 0.4);
+}
+
+.mockup-header {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.mockup-dots {
+    display: flex;
+    gap: 6px;
+}
+
+.mockup-dots span {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.dot-red { background-color: var(--danger); }
+.dot-yellow { background-color: var(--warning); }
+.dot-green { background-color: var(--success); }
+
+.mockup-title {
+    font-size: 0.8rem;
+    color: var(--text-sub);
+    font-weight: 500;
+    font-family: var(--font-body);
+    letter-spacing: 0.5px;
+}
+
+.mockup-tabs {
+    display: flex;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.mockup-tab-item {
+    flex: 1;
+    text-align: center;
+    padding: 10px 5px;
+    font-size: 0.8rem;
+    color: var(--text-sub);
+    cursor: pointer;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: var(--transition-smooth);
+}
+
+.mockup-tab-item.active {
+    color: var(--primary-light);
+    border-bottom-color: var(--primary);
+    background: rgba(139, 92, 246, 0.08);
+}
+
+.mockup-body {
+    display: flex;
+    flex-direction: column;
+    min-height: 390px;
+}
+
+.mockup-workspace {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+}
+
+.mockup-step-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--secondary);
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+.mockup-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.card-icon {
+    font-size: 1.3rem;
+}
+
+.card-info {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.card-title-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: white;
+}
+
+.card-sub-text {
+    font-size: 0.72rem;
+    color: var(--success);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.mockup-params {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.param-input label {
+    font-size: 0.72rem;
+    color: var(--text-sub);
+    display: block;
+    margin-bottom: 4px;
+    text-align: left;
+}
+
+.number-box {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    color: white;
+    text-align: left;
+    font-weight: 500;
+}
+
+.mockup-options-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.15);
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.mockup-options-row-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    color: var(--text-sub);
+}
+
+.mockup-options-row-divider {
+    width: 1px;
+    height: 16px;
+    background-color: var(--border-color);
+}
+
+.chk-box {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    border: 1px solid var(--success);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.55rem;
+    font-weight: bold;
+}
+
+.chk-box.checked {
+    background-color: var(--success);
+    color: white;
+}
+
+.mockup-action-wrapper {
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mockup-btn-primary-purple {
+    background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
+    font-weight: bold;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
+    text-transform: uppercase;
+}
+
+.mockup-btn {
+    background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);
+    transition: var(--transition-smooth);
+    letter-spacing: 0.5px;
+}
+
+.mockup-btn:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+.mockup-progress-wrapper {
+    margin-top: 4px;
+}
+
+.mockup-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(16, 185, 129, 0.05);
+    border: 1px dashed rgba(16, 185, 129, 0.3);
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+
+.progress-bar-container {
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-bar-val {
+    height: 100%;
+    background-color: var(--success);
+}
+
+.progress-lbl {
+    font-size: 0.72rem;
+    color: var(--success);
+    font-weight: 500;
+    text-align: left;
+}
+
+/* Responsive Rules for Hero */
+@media (max-width: 1024px) {
+    .hero-container {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 50px;
+    }
+    
+    .hero-content {
+        align-items: center;
+    }
+    
+    .hero-title {
+        font-size: 3rem;
+    }
+    
+    .hero-btns {
+        justify-content: center;
+    }
+    
+    .hero-stats {
+        justify-content: center;
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.3rem;
+    }
+}

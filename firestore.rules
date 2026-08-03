@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Firestore mặc định TỪ CHỐI mọi thao tác không khớp rule nào bên dưới.
+    // (Trước đây ở đây có `match /{document=**} { allow read, write: if false; }` —
+    //  đó KHÔNG phải deny-all: các rule được OR với nhau nên `if false` không chặn
+    //  được rule khác, chỉ gây cảm giác an toàn giả.)
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isSuperAdmin() {
+      // Yêu cầu custom claim `admin` — hiện chưa có thành phần nào set claim này.
+      // Sẽ được cấp qua Firebase Admin SDK ở backend (xem kế hoạch bước 5).
+      return isSignedIn() && request.auth.token.get('admin', false) == true;
+    }
+
+    // Doc mới phải thuộc về chính người đang ghi.
+    function ownsIncoming() {
+      return isSignedIn()
+        && request.resource.data.get('ownerId', '') == request.auth.uid
+        && request.resource.data.get('teacherId', request.auth.uid) == request.auth.uid;
+    }
+
+    function ownsExisting() {
+      return isSignedIn() && (
+        resource.data.get('ownerId', '') == request.auth.uid ||
+        resource.data.get('teacherId', '') == request.auth.uid
+      );
+    }
+
+    // Dùng get() để doc thiếu field isPublic không làm rule lỗi (lỗi = từ chối).
+    function isPublicDoc() {
+      return resource.data.get('isPublic', false) == true;
+    }
+
+    // Không cho đổi chủ sở hữu khi update.
+    function ownerUnchanged() {
+      return request.resource.data.get('ownerId', '') == resource.data.get('ownerId', '');
+    }
+
+    // Users Collection rules
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isSuperAdmin();
+
+      // SEC-3 FIX: hồ sơ tự tạo luôn ở trạng thái 'pending'.
+      // Trước đây `allow create: if isSignedIn() && isOwner(userId)` không ràng buộc
+      // field nào, mà client là bên ghi document — bất kỳ ai đăng nhập cũng tự đặt
+      // được status:'admin' và backend getUserRole() đọc đúng field đó để cấp quyền.
+      // Email cũng phải khớp token vì backend từng đối chiếu email trong document
+      // với ADMIN_EMAIL. Nâng quyền chỉ được thực hiện bởi admin.
+      allow create: if isOwner(userId)
+        && request.resource.data.get('status', '') == 'pending'
+        && request.resource.data.get('email', '') == request.auth.token.get('email', '')
+        && !request.resource.data.keys().hasAny(['role', 'expireAt', 'activatedAt']);
+
+      // SEC-2 FIX: chủ sở hữu không được sửa các trường quyết định quyền hạn.
+      allow update: if isSuperAdmin() || (
+        isOwner(userId) &&
+        !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['status', 'role', 'expireAt', 'activatedAt', 'emailVerified', 'email'])
+      );
+
+      allow delete: if isSuperAdmin();
+    }
+
+    // Questions Collection rules
+    match /questions/{questionId} {
+      allow read: if ownsExisting() || isPublicDoc() || isSuperAdmin();
+      // SEC-4 FIX: trước đây `allow create: if isSignedIn()` cho phép tạo câu hỏi
+      // mang ownerId của người khác và/hoặc isPublic:true — kết hợp với việc
+      // frontend render questionText bằng innerHTML thì đó là đường stored XSS.
+      allow create: if ownsIncoming();
+      allow update: if (ownsExisting() || isSuperAdmin()) && ownerUnchanged();
+      allow delete: if ownsExisting() || isSuperAdmin();
+    }
+
+    // Exams Collection rules
+    match /exams/{examId} {
+      allow read: if ownsExisting() || isPublicDoc() || isSuperAdmin();
+      allow create: if ownsIncoming();
+      allow update: if (ownsExisting() || isSuperAdmin()) && ownerUnchanged();
+      allow delete: if ownsExisting() || isSuperAdmin();
+    }
+
+    // Curriculums Collection rules
+    match /curriculums/{curriculumId} {
+      allow read: if ownsExisting() || isPublicDoc() || isSuperAdmin();
+      allow create: if ownsIncoming();
+      allow update: if (ownsExisting() || isSuperAdmin()) && ownerUnchanged();
+      allow delete: if ownsExisting() || isSuperAdmin();
+    }
+  }
+}

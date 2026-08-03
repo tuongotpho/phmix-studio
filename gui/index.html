@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pH-mix - Trộn Đề Thi Trắc Nghiệm Pro</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['\\(', '\\)']],
+                displayMath: [['\\[', '\\]']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <link rel="stylesheet" href="/tron-de/style.css">
+    <link rel="icon" type="image/png" href="/shuffle.png">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar / Header -->
+        <header class="app-header">
+            <div>
+                <div class="label">v2.7 (21/07/2026) // PROFESSIONAL ASSESSMENT MIXER <span id="trial-badge" class="trial-badge" style="display: none;"></span></div>
+                <h1>pH-mix</h1>
+                <p class="subtitle">Trộn đề thi thông minh giữ nguyên 100% MathType & Hình ảnh</p>
+            </div>
+            <div class="header-controls">
+                <div id="user-widget">
+                    <button class="btn btn-primary" id="btn-login">
+                        🔑 ĐĂNG NHẬP GOOGLE
+                    </button>
+                    <div id="user-profile" style="display: none;">
+                        <img id="user-avatar" src="">
+                        <div class="user-info-text">
+                            <span id="user-name">User</span>
+                            <span id="user-role-badge">Basic</span>
+                        </div>
+                        <button class="btn btn-secondary" id="btn-logout">ĐĂNG XUẤT</button>
+                    </div>
+                </div>
+                <a href="/" class="btn btn-secondary" id="btn-home-link">
+                    🏠 VỀ TRANG CHỦ
+                </a>
+            </div>
+        </header>
+
+
+
+        <!-- Main Workspace -->
+        <main class="workspace" id="main-app" style="display: none;">
+            <!-- Left Panel: Configurations & Status -->
+            <section class="panel config-panel">
+                <!-- Tab Menu Header -->
+                <div class="tabs-header">
+                    <button class="tab-btn active" id="tab-btn-shuffle">🧪 Trộn Đề & Phân Loại</button>
+                    <button class="tab-btn" id="tab-btn-bank">📚 Ngân Hàng & Kho Đề</button>
+                    <button class="tab-btn" id="tab-btn-builder">🧩 Lắp Ráp Đề Thi</button>
+                    <button class="tab-btn" id="tab-btn-about">⚙️ Giới Thiệu & Bản Quyền</button>
+                    <button class="tab-btn" id="tab-btn-admin" style="display: none;">🛡️ Quản Trị</button>
+                </div>
+                
+                <!-- Tab 1: Shuffle Configurations -->
+                <div class="tab-content active" id="tab-content-shuffle">
+                    <!-- File Input Card -->
+                    <div class="card file-card file-card-compact ex-style-1" id="select-file-btn" >
+                        <div class="ex-style-2" >
+                            <span class="label ex-style-3" >Step 01</span>
+                            <div class="step-text-title-bold ex-style-4" id="file-name-display" >📁 Chọn tệp đề mẫu (.docx)</div>
+                        </div>
+                        <span class="file-help ex-style-5" >Nhấp để chọn file</span>
+                    </div>
+                    <!-- Hidden file input for web mode -->
+                    <input type="file" id="web-file-input" accept=".docx" style="display: none;">
+
+                    <!-- Stage 2 Classification & Matrix Card -->
+                    <div class="card classification-card ex-style-6" id="classification-card" >
+                        <!-- Single Horizontal Row Header -->
+                        <div class="ex-style-7" >
+                            <div class="ex-style-8" >
+                                <span class="label ex-style-9" >Step 02</span>
+                                <span class="ex-style-10" >🏷️ Phân Loại Ma Trận & Cây Danh Mục SGK</span>
+                                <span class="badge ex-style-11" id="parsed-count-badge" >0 câu hỏi</span>
+                            </div>
+                            <div class="ex-style-8" >
+                                <span class="ex-style-12" id="matrix-login-hint" >(🔒 Đăng nhập để sử dụng)</span>
+                                <label class="checkbox-container ex-style-13" id="lbl-enable-matrix"  title="Vui lòng đăng nhập để bật phân loại ma trận câu hỏi">
+                                    <input type="checkbox" id="chk-enable-matrix" disabled>
+                                    <span class="checkmark"></span>
+                                    Bật phân loại câu hỏi
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Matrix Card Body (Collapsible) -->
+                        <div id="matrix-card-body" style="display: none;">
+                            <!-- Bulk Tagging Row (All 5 items in 1 horizontal line) -->
+                            <div class="bulk-tagging-row ex-style-14" >
+                                <div class="input-group ex-style-15" >
+                                    <label class="ex-style-16" for="bulk-subject" >Môn học</label>
+                                    <select class="ex-style-17" id="bulk-subject" >
+                                        <option value="Chưa phân loại">⚪ Chưa phân loại</option>
+                                        <option value="Vật lý">Vật lý</option>
+                                        <option value="Toán học">Toán học</option>
+                                        <option value="Hóa học">Hóa học</option>
+                                        <option value="Sinh học">Sinh học</option>
+                                        <option value="Tiếng Anh">Tiếng Anh</option>
+                                        <option value="Ngữ văn">Ngữ văn</option>
+                                        <option value="Lịch sử">Lịch sử</option>
+                                        <option value="Địa lý">Địa lý</option>
+                                        <option value="GDCD">GDCD</option>
+                                        <option value="Tin học">Tin học</option>
+                                    </select>
+                                </div>
+                                <div class="input-group ex-style-18" >
+                                    <label class="ex-style-16" for="bulk-grade" >Khối lớp</label>
+                                    <select class="ex-style-17" id="bulk-grade" >
+                                        <option value="Chưa phân loại">⚪ Chưa phân loại</option>
+                                        <option value="Lớp 10">Lớp 10</option>
+                                        <option value="Lớp 11">Lớp 11</option>
+                                        <option value="Lớp 12">Lớp 12</option>
+                                    </select>
+                                </div>
+                                <div class="input-group ex-style-19" >
+                                    <label class="ex-style-16" for="bulk-chapter" >Chương / Chủ đề</label>
+                                    <input class="ex-style-17" type="text" id="bulk-chapter" placeholder="Ví dụ: Chương 1..." >
+                                </div>
+                                <div class="input-group ex-style-19" >
+                                    <label class="ex-style-16" for="bulk-lesson" >Bài học</label>
+                                    <input class="ex-style-17" type="text" id="bulk-lesson" placeholder="Ví dụ: Bài 1..." >
+                                </div>
+                                <button class="btn btn-secondary ex-style-20" id="btn-apply-bulk-tags" type="button" >⚡ Áp dụng nhanh</button>
+                            </div>
+
+                            <!-- Question Matrix List -->
+                            <div class="matrix-table-wrapper ex-style-21" >
+                                <div class="ex-style-22" >BẢNG MA TRẬN CÂU HỎI (Mặc định: "Chưa phân loại")</div>
+                                <div class="ex-style-23" id="parsed-questions-list" >
+                                    <div class="ex-style-24" >Đang sẵn sàng phân tích đề gốc...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Steps 03 & 04 Grid side-by-side -->
+                    <div class="steps-3-4-grid ex-style-25" >
+                        <!-- Step 03 Parameters Card -->
+                        <div class="card params-card ex-style-9" >
+                            <div class="ex-style-26" >
+                                <span class="label ex-style-9" >Step 03</span>
+                                <span class="ex-style-27" >Thông số mã đề</span>
+                            </div>
+                            <div class="params-inputs-wrapper ex-style-28" >
+                                <div class="input-group">
+                                    <label class="ex-style-29" for="num-codes" >Số lượng mã đề</label>
+                                    <input class="ex-style-30" type="number" id="num-codes" min="1" max="100" value="4" >
+                                </div>
+                                <div class="input-group">
+                                    <label class="ex-style-29" for="code-start" >Mã đề bắt đầu</label>
+                                    <input class="ex-style-30" type="number" id="code-start" min="1000" max="9999" value="1001" >
+                                </div>
+                            </div>
+                            <div class="ex-style-31" >⚠️ Khuyến cáo: Nên tạo tối đa 24 mã đề để đạt hiệu năng tốt nhất.</div>
+                        </div>
+
+                        <!-- Step 04 Options Card -->
+                        <div class="card options-card ex-style-9" >
+                            <div class="ex-style-26" >
+                                <span class="label ex-style-9" >Step 04</span>
+                                <span class="ex-style-27" >Tùy chọn trộn đề</span>
+                            </div>
+                            <div class="options-column ex-style-23" >
+                                <label class="checkbox-container ex-style-29" >
+                                    <input type="checkbox" id="opt-shuffle-questions" checked>
+                                    <span class="checkmark"></span>
+                                    Đảo câu hỏi từng phần
+                                </label>
+                                <label class="checkbox-container ex-style-29" >
+                                    <input type="checkbox" id="opt-shuffle-choices" checked>
+                                    <span class="checkmark"></span>
+                                    Đảo A, B, C, D (Phần I)
+                                </label>
+                                <label class="checkbox-container ex-style-29" >
+                                    <input type="checkbox" id="opt-shuffle-statements" checked>
+                                    <span class="checkmark"></span>
+                                    Đảo lựa chọn đúng/sai (Phần II)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action button -->
+                    <button class="btn btn-primary" id="btn-start-shuffle">
+                        <span>⚡ BẮT ĐẦU TRỘN ĐỀ</span>
+                    </button>
+
+                    </div>
+
+                <!-- Tab 2: Ngân Hàng Câu Hỏi & Kho Đề -->
+                <div class="tab-content" id="tab-content-bank">
+                    <!-- Sub-tab Navigation Header -->
+                    <div class="subtabs-header ex-style-32" >
+                        <button class="btn btn-secondary subtab-btn active ex-style-33" id="subtab-btn-questions" >🗃️ Ngân hàng câu hỏi</button>
+                        <button class="btn btn-secondary subtab-btn ex-style-33" id="subtab-btn-exams" >📁 Kho đề thi đã lưu</button>
+                        <button class="btn btn-secondary subtab-btn ex-style-33" id="subtab-btn-tree" >🌳 Cây danh mục (SGK)</button>
+                    </div>
+
+                    <!-- Subtab 1: Questions Bank -->
+                    <div class="subtab-content" id="subtab-content-questions">
+                        <div class="card bank-filter-card">
+                            <div class="label">Bộ lọc câu hỏi</div>
+                            <!-- Row 1: Always visible basic filters -->
+                            <div class="bank-filters-basic" style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; margin-top: 6px; align-items: end;">
+                                <div class="input-group">
+                                    <label for="bank-search-q" style="font-size: 10px; font-weight: bold; text-transform: uppercase;">🔍 Tìm từ khóa câu hỏi</label>
+                                    <input type="text" id="bank-search-q" placeholder="Nhập từ khóa cần tìm..." class="admin-search-input" style="width: 100%; border: 1.5px solid var(--ink); border-radius: 0; padding: 6px 10px; font-family: var(--font-body); font-size: 12px; height: 35px;">
+                                </div>
+                                <div class="input-group">
+                                    <label for="bank-filter-subject" style="font-size: 10px; font-weight: bold; text-transform: uppercase;">📚 Môn học</label>
+                                    <select id="bank-filter-subject" style="width: 100%; border: 1.5px solid var(--ink); border-radius: 0; padding: 6px 10px; font-family: var(--font-body); font-size: 12px; background: #fff; height: 35px;">
+                                        <option value="">Tất cả môn</option>
+                                        <option value="Chưa phân loại">⚪ Chưa phân loại</option>
+                                        <option value="Vật lý">Vật lý</option>
+                                        <option value="Toán học">Toán học</option>
+                                        <option value="Hóa học">Hóa học</option>
+                                        <option value="Sinh học">Sinh học</option>
+                                        <option value="Tiếng Anh">Tiếng Anh</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label for="bank-filter-grade" style="font-size: 10px; font-weight: bold; text-transform: uppercase;">🎓 Khối lớp</label>
+                                    <select id="bank-filter-grade" style="width: 100%; border: 1.5px solid var(--ink); border-radius: 0; padding: 6px 10px; font-family: var(--font-body); font-size: 12px; background: #fff; height: 35px;">
+                                        <option value="">Tất cả khối</option>
+                                        <option value="Chưa phân loại">⚪ Chưa phân loại</option>
+                                        <option value="Lớp 10">Lớp 10</option>
+                                        <option value="Lớp 11">Lớp 11</option>
+                                        <option value="Lớp 12">Lớp 12</option>
+                                    </select>
+                                </div>
+                                <button type="button" class="btn btn-secondary" style="height: 35px; font-size: 11px; padding: 0 12px;" onclick="const adv = document.getElementById('bank-advanced-filters'); adv.style.display = adv.style.display === 'none' ? 'grid' : 'none'; this.innerText = adv.style.display === 'none' ? '⚙️ Lọc nâng cao' : '⚙️ Ẩn bộ lọc';">⚙️ Lọc nâng cao</button>
+                            </div>
+                            
+                            <!-- Row 2: Advanced filters (hidden by default) -->
+                            <div id="bank-advanced-filters" style="display: none; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 12px; border-top: 1px dashed var(--ink); padding-top: 12px;">
+                                <div class="input-group">
+                                    <label for="bank-filter-chapter" style="font-size: 10px; font-weight: bold; text-transform: uppercase;">📖 Chương / Chủ đề</label>
+                                    <input type="text" id="bank-filter-chapter" placeholder="Lọc theo Chương..." class="admin-search-input" style="width: 100%; border: 1.5px solid var(--ink); border-radius: 0; padding: 6px 10px; font-family: var(--font-body); font-size: 12px; height: 35px;">
+                                </div>
+                                <div class="input-group">
+                                    <label for="bank-filter-lesson" style="font-size: 10px; font-weight: bold; text-transform: uppercase;">📝 Bài học</label>
+                                    <input type="text" id="bank-filter-lesson" placeholder="Lọc theo Bài..." class="admin-search-input" style="width: 100%; border: 1.5px solid var(--ink); border-radius: 0; padding: 6px 10px; font-family: var(--font-body); font-size: 12px; height: 35px;">
+                                </div>
+                                <div class="input-group">
+                                    <label for="bank-filter-type" style="font-size: 10px; font-weight: bold; text-transform: uppercase;">🧩 Dạng câu hỏi</label>
+                                    <select id="bank-filter-type" style="width: 100%; border: 1.5px solid var(--ink); border-radius: 0; padding: 6px 10px; font-family: var(--font-body); font-size: 12px; background: #fff; height: 35px;">
+                                        <option value="">Tất cả dạng câu</option>
+                                        <option value="choice">Trắc nghiệm (4 phương án)</option>
+                                        <option value="true_false">Đúng / Sai (Mệnh đề)</option>
+                                        <option value="short_answer">Tự luận / Trả lời ngắn</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label for="bank-filter-difficulty" style="font-size: 10px; font-weight: bold; text-transform: uppercase;">📊 Mức độ</label>
+                                    <select id="bank-filter-difficulty" style="width: 100%; border: 1.5px solid var(--ink); border-radius: 0; padding: 6px 10px; font-family: var(--font-body); font-size: 12px; background: #fff; height: 35px;">
+                                        <option value="">Tất cả mức độ</option>
+                                        <option value="Chưa phân loại">⚪ Chưa phân loại (Mặc định)</option>
+                                        <option value="Nhận biết">🟢 Nhận biết</option>
+                                        <option value="Thông hiểu">🔵 Thông hiểu</option>
+                                        <option value="Vận dụng">🟠 Vận dụng</option>
+                                        <option value="Vận dụng cao">🔴 Vận dụng cao</option>
+                                    </select>
+                                </div>
+                                <div class="input-group" style="grid-column: span 2;">
+                                    <label for="bank-filter-scope" style="font-size: 10px; font-weight: bold; text-transform: uppercase;">🌐 Phạm vi lưu trữ</label>
+                                    <select id="bank-filter-scope" style="width: 100%; border: 1.5px solid var(--ink); border-radius: 0; padding: 6px 10px; font-family: var(--font-body); font-size: 12px; background: #fff; height: 35px;">
+                                        <option value="all">Mô hình lai: Tất cả kho</option>
+                                        <option value="private" selected>🔒 Kho cá nhân (Mặc định)</option>
+                                        <option value="public">🌐 Chia sẻ cộng đồng</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="ex-style-36" >
+                                <div class="ex-style-37" >
+                                    <span class="ex-style-38" id="bank-q-count-text" >Đang hiển thị 0 câu hỏi</span>
+                                    <label class="ex-style-39" >
+                                        <input class="ex-style-40" type="checkbox" id="chk-bank-select-all" > Chọn tất cả
+                                    </label>
+                                    <button class="btn btn-sm ex-style-41" id="btn-bank-delete-selected" >
+                                        🗑️ Xóa các câu đã chọn (<span id="bank-selected-count">0</span>)
+                                    </button>
+                                </div>
+                                <div class="ex-style-42" >
+                                    <button class="btn btn-secondary btn-sm ex-style-29" id="btn-add-manual-q" >➕ Thêm câu hỏi thủ công</button>
+                                    <button class="btn btn-primary btn-sm ex-style-29" id="btn-import-exams-to-bank" >📥 Nhập đề lên kho</button>
+                                    <input type="file" id="bank-import-file-input" accept=".docx" multiple style="display: none;">
+                                    <button class="btn btn-primary btn-sm ex-style-29" id="btn-refresh-bank" >🔄 Tải lại</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ex-style-43" id="bank-questions-list" >
+                            <div class="ex-style-44" >Sẵn sàng kết nối Ngân Hàng Câu Hỏi...</div>
+                        </div>
+                    </div>
+
+                    <!-- Subtab 2: Saved Exams -->
+                    <div class="subtab-content" id="subtab-content-exams" style="display: none;">
+                        <div class="card">
+                            <div class="label">Kho đề thi đã lưu</div>
+                            <div class="ex-style-45" >
+                                <span class="ex-style-46" id="bank-exams-count-text" >0 đề thi trong kho</span>
+                                <button class="btn btn-primary btn-sm ex-style-29" id="btn-refresh-exams" >🔄 Tải lại kho đề</button>
+                            </div>
+                            <div class="ex-style-47" id="bank-exams-list" >
+                                <div class="ex-style-44" >Đang tải danh sách đề thi...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subtab 3: Category Tree -->
+                    <div class="subtab-content" id="subtab-content-tree" style="display: none;">
+                        <div class="card">
+                            <div class="label">Quản lý Cây danh mục linh hoạt (SGK)</div>
+                            <p class="ex-style-48" >Giáo viên có thể tự thêm bớt các Môn học, Khối lớp, Chương, Bài theo tiến trình giảng dạy riêng.</p>
+                            
+                            <div class="ex-style-49" >
+                                <!-- Add category form -->
+                                <div class="ex-style-50" >
+                                    <div class="ex-style-51" >➕ Thêm Danh Mục Mới</div>
+                                    <div class="ex-style-52" >
+                                        <div class="input-group">
+                                            <label for="custom-cat-type">Loại danh mục</label>
+                                            <select id="custom-cat-type">
+                                                <option value="subject">Môn học mới</option>
+                                                <option value="grade">Khối lớp mới</option>
+                                                <option value="chapter">Chương / Chủ đề mới</option>
+                                                <option value="lesson">Bài học mới</option>
+                                            </select>
+                                        </div>
+                                        <div class="input-group">
+                                            <label for="custom-cat-name">Tên danh mục</label>
+                                            <input type="text" id="custom-cat-name" placeholder="Nhập tên môn, chương hoặc bài...">
+                                        </div>
+                                        <button class="btn btn-primary btn-sm ex-style-29" id="btn-save-custom-cat" >💾 Lưu vào cây danh mục</button>
+                                    </div>
+                                </div>
+
+                                <!-- Existing custom tree -->
+                                <div class="ex-style-53" >
+                                    <div class="ex-style-51" >🌳 Danh mục cá nhân do GV thiết lập</div>
+                                    <div class="ex-style-23" id="custom-categories-list" >
+                                        <div class="ex-style-54" >Chưa có danh mục tùy chỉnh nào...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Lắp Ráp & Trộn Đề Từ Ngân Hàng -->
+                <div class="tab-content" id="tab-content-builder">
+                    <div class="card">
+                        <div class="label">Step 01</div>
+                        <div class="step-text-title-bold">Lắp ráp & Tạo đề thi mới từ Ngân Hàng Câu Hỏi</div>
+                        <p class="ex-style-55" >Chọn các câu hỏi đã tích lũy trong Ngân hàng để tự động lắp ráp thành một đề thi hoàn chỉnh và xáo trộn mã đề.</p>
+                        
+                        <!-- Basic Exam settings (Always visible) -->
+                        <div class="builder-filters-basic" style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; margin-top: 10px; align-items: end;">
+                            <div class="input-group">
+                                <label for="builder-exam-title" style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Tiêu đề đề thi mới</label>
+                                <input type="text" id="builder-exam-title" value="Đề kiểm tra lắp ráp từ Ngân hàng" style="width: 100%; border: 1.5px solid var(--ink); border-radius: 0; padding: 6px 10px; font-family: var(--font-body); font-size: 12px; height: 35px;">
+                            </div>
+                            <div class="input-group">
+                                <label for="builder-num-codes" style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Số mã đề tạo</label>
+                                <input type="number" id="builder-num-codes" min="1" max="100" value="4" style="width: 100%; border: 1.5px solid var(--ink); border-radius: 0; padding: 6px 10px; font-family: var(--font-body); font-size: 12px; height: 35px;">
+                            </div>
+                            <div class="input-group">
+                                <label for="builder-code-start" style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Mã đề bắt đầu</label>
+                                <input type="number" id="builder-code-start" min="100" max="9999" value="1001" style="width: 100%; border: 1.5px solid var(--ink); border-radius: 0; padding: 6px 10px; font-family: var(--font-body); font-size: 12px; height: 35px;">
+                            </div>
+                            <button type="button" class="btn btn-secondary" style="height: 35px; font-size: 11px; padding: 0 12px;" onclick="const adv = document.getElementById('builder-filter-options'); adv.style.display = adv.style.display === 'none' ? 'grid' : 'none'; this.innerText = adv.style.display === 'none' ? '⚙️ Lọc câu hỏi' : '⚙️ Ẩn bộ lọc';">⚙️ Lọc câu hỏi</button>
+                        </div>
+                        
+                        <!-- Advanced Filter options (hidden by default) -->
+                        <div id="builder-filter-options" style="display: none; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 12px; border-top: 1px dashed var(--ink); padding-top: 12px;">
+                            <div class="input-group">
+                                <label for="builder-filter-subject" style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Lọc theo Môn</label>
+                                <select id="builder-filter-subject" style="width: 100%; border: 1.5px solid var(--ink); border-radius: 0; padding: 6px 10px; font-family: var(--font-body); font-size: 12px; background: #fff; height: 35px;">
+                                    <option value="">Tất cả môn</option>
+                                    <option value="Vật lý">Vật lý</option>
+                                    <option value="Toán học">Toán học</option>
+                                    <option value="Hóa học">Hóa học</option>
+                                    <option value="Sinh học">Sinh học</option>
+                                    <option value="Tiếng Anh">Tiếng Anh</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="builder-filter-grade" style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Lọc theo Khối</label>
+                                <select id="builder-filter-grade" style="width: 100%; border: 1.5px solid var(--ink); border-radius: 0; padding: 6px 10px; font-family: var(--font-body); font-size: 12px; background: #fff; height: 35px;">
+                                    <option value="">Tất cả khối</option>
+                                    <option value="Lớp 10">Lớp 10</option>
+                                    <option value="Lớp 11">Lớp 11</option>
+                                    <option value="Lớp 12">Lớp 12</option>
+                                </select>
+                            </div>
+                            <div class="input-group" style="grid-column: span 2;">
+                                <label for="builder-filter-type" style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Loại câu hỏi</label>
+                                <select id="builder-filter-type" style="width: 100%; border: 1.5px solid var(--ink); border-radius: 0; padding: 6px 10px; font-family: var(--font-body); font-size: 12px; background: #fff; height: 35px;">
+                                    <option value="">Tất cả dạng câu</option>
+                                    <option value="choice">Trắc nghiệm</option>
+                                    <option value="true_false">Đúng / Sai</option>
+                                    <option value="short_answer">Tự luận / TL ngắn</option>
+                                </select>
+                            </div>
+                            <div class="input-group" style="grid-column: span 2;">
+                                <label for="builder-filter-chapter" style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Chương</label>
+                                <input type="text" id="builder-filter-chapter" placeholder="Lọc Chương..." style="width: 100%; border: 1.5px solid var(--ink); border-radius: 0; padding: 6px 10px; font-family: var(--font-body); font-size: 12px; height: 35px;">
+                            </div>
+                            <div class="input-group" style="grid-column: span 2;">
+                                <label for="builder-filter-lesson" style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Bài</label>
+                                <input type="text" id="builder-filter-lesson" placeholder="Lọc Bài..." style="width: 100%; border: 1.5px solid var(--ink); border-radius: 0; padding: 6px 10px; font-family: var(--font-body); font-size: 12px; height: 35px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selection Table -->
+                    <div class="card ex-style-57" >
+                        <div class="ex-style-58" >
+                            <span class="ex-style-59" >Danh sách câu hỏi trong Ngân Hàng (<span id="builder-selected-count">0</span> câu chọn)</span>
+                            <div class="ex-style-42" >
+                                <button class="btn btn-secondary btn-sm ex-style-29" id="btn-builder-select-all" >☑️ Chọn tất cả</button>
+                                <button class="btn btn-secondary btn-sm ex-style-29" id="btn-builder-deselect-all" >⏹️ Bỏ chọn</button>
+                            </div>
+                        </div>
+                        <div class="ex-style-60" id="builder-questions-list" >
+                            <div class="ex-style-61" >Đang kết nối danh sách câu hỏi...</div>
+                        </div>
+                        
+                        <div class="ex-style-62" id="builder-action-buttons" >
+                            <button id="btn-builder-confirm" class="btn btn-primary ex-style-63" ><span>✅ XÁC NHẬN</span></button>
+                            <button id="btn-builder-download" class="btn btn-primary ex-style-64"  disabled><span>📥 TẢI ĐỀ .DOCX</span></button>
+                            <button id="btn-builder-shuffle" class="btn btn-primary ex-style-65"  disabled><span>⚡ TRỘN NGAY</span></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 4: About & License Information -->
+                <div class="tab-content" id="tab-content-about">
+                    <div style="display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; margin-top: 10px;">
+                        
+                        <!-- Left Column: Info & License (Condensed) -->
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <!-- Hero Brand & License Card -->
+                            <div style="border: 1px solid var(--ink); padding: 16px; background: #fff; display: flex; flex-direction: column; gap: 12px; box-shadow: 4px 4px 0px var(--ink);">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 24px; line-height: 1;">🧪</span>
+                                    <div>
+                                        <h2 style="font-size: 18px; font-weight: 700; margin: 0; color: var(--ink);">pH-mix Pro</h2>
+                                        <div id="app-version-about" style="font-family: var(--font-mono); font-size: 11px; opacity: 0.6; font-weight: 600;">Phiên bản: -</div>
+                                    </div>
+                                </div>
+                                <p style="font-size: 12px; opacity: 0.8; margin: 0; line-height: 1.4;">Trộn đề thi trắc nghiệm giữ nguyên 100% MathType & hình ảnh.</p>
+                                
+                                <div style="border-top: 1px dashed var(--ink); padding-top: 10px; margin-top: 2px; display: flex; flex-direction: column; gap: 8px; font-size: 12px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="opacity: 0.7; font-weight: 600;">Bản quyền:</span>
+                                        <span id="license-status-val" style="font-weight: 700; padding: 1px 6px; background: #dcfce7; color: #166534; border: 1px solid #166534; font-size: 10px; font-family: var(--font-mono);">Đã kích hoạt</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="opacity: 0.7; font-weight: 600;">Gói & Hạn dùng:</span>
+                                        <span style="font-weight: 700; font-family: var(--font-mono);"><span id="license-plan-val">-</span> (<span id="license-expiry-val">-</span>)</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="opacity: 0.7; font-weight: 600;">Thời gian còn lại:</span>
+                                        <span id="license-days-val" style="font-weight: 700; font-family: var(--font-mono); color: #dc2626;">-</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Payment & Contact Card (Condensed) -->
+                            <div style="border: 1px solid var(--ink); padding: 16px; background: #fff; display: flex; flex-direction: column; gap: 10px; box-shadow: 4px 4px 0px var(--ink);">
+                                <div style="display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px;">
+                                    <span style="font-size: 16px;">💬</span>
+                                    <h3 style="font-size: 13px; font-weight: 700; margin: 0; text-transform: uppercase;">Liên Hệ & Gia Hạn</h3>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px; line-height: 1.4;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="opacity: 0.7; font-weight: 600;">Tác giả / Web:</span>
+                                        <span style="font-weight: 700;">Lê Thanh / <a href="https://ph-mix.ai.studio" target="_blank" style="color: var(--accent); text-decoration: underline;">ph-mix.ai.studio</a></span>
+                                    </div>
+                                    <div style="background: #f9fafb; border: 1px solid var(--ink); padding: 8px 10px; cursor: pointer; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;" id="bank-copy-card" title="Nhấp để sao chép số tài khoản" onclick="navigator.clipboard.writeText('938118'); alert('Đã sao chép số tài khoản: 938118')">
+                                        <div>
+                                            <div style="font-size: 9px; text-transform: uppercase; font-weight: 700; opacity: 0.5;">Gia hạn MBBank (Click copy)</div>
+                                            <div style="font-weight: 700; font-family: var(--font-mono); color: var(--accent); font-size: 13px; margin-top: 2px;">938118 📋</div>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <div style="font-weight: 700; font-size: 11px;">Lê Việt Thanh</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Guidelines -->
+                        <div style="border: 1px solid var(--ink); padding: 24px; background: #fff; display: flex; flex-direction: column; gap: 20px; box-shadow: 4px 4px 0px var(--ink);">
+                            <div style="display: flex; align-items: center; gap: 10px; border-bottom: 2px solid var(--ink); padding-bottom: 14px;">
+                                <span style="font-size: 22px;">📖</span>
+                                <h3 style="font-size: 16px; font-weight: 700; margin: 0; text-transform: uppercase;">Hướng Dẫn Soạn Đề Chuẩn</h3>
+                            </div>
+                            
+                            <div style="display: flex; flex-direction: column; gap: 14px; font-size: 13px; line-height: 1.6;">
+                                <div style="display: flex; gap: 10px;">
+                                    <span style="color: var(--accent); font-weight: bold;">01.</span>
+                                    <div>
+                                        <strong style="color: var(--ink); font-weight: 700;">Cấu trúc phần thi:</strong>
+                                        Phân định rõ ràng bằng tiêu đề chữ in hoa đậm: <code style="background: #f1f5f9; padding: 2px 6px; border: 1px solid #cbd5e1; font-family: var(--font-mono); font-size: 11px; font-weight: 600;">PHẦN I</code>, <code style="background: #f1f5f9; padding: 2px 6px; border: 1px solid #cbd5e1; font-family: var(--font-mono); font-size: 11px; font-weight: 600;">PHẦN II</code>.
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 10px; border-top: 1px dashed #e5e7eb; padding-top: 10px;">
+                                    <span style="color: var(--accent); font-weight: bold;">02.</span>
+                                    <div>
+                                        <strong style="color: var(--ink); font-weight: 700;">Tên câu hỏi:</strong>
+                                        Bắt buộc phải bắt đầu bằng dạng <code style="background: #f1f5f9; padding: 2px 6px; border: 1px solid #cbd5e1; font-family: var(--font-mono); font-size: 11px; font-weight: 600;">Câu [Số].</code> hoặc <code style="background: #f1f5f9; padding: 2px 6px; border: 1px solid #cbd5e1; font-family: var(--font-mono); font-size: 11px; font-weight: 600;">Question [Số].</code> (chú ý có dấu chấm ngay sau số thứ tự).
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 10px; border-top: 1px dashed #e5e7eb; padding-top: 10px;">
+                                    <span style="color: var(--accent); font-weight: bold;">03.</span>
+                                    <div>
+                                        <strong style="color: var(--ink); font-weight: 700;">Các phương án lựa chọn:</strong>
+                                        Định dạng chuẩn bằng chữ in hoa kèm dấu chấm: <code style="background: #f1f5f9; padding: 2px 6px; border: 1px solid #cbd5e1; font-family: var(--font-mono); font-size: 11px; font-weight: 600;">A.</code>, <code style="background: #f1f5f9; padding: 2px 6px; border: 1px solid #cbd5e1; font-family: var(--font-mono); font-size: 11px; font-weight: 600;">B.</code>, <code style="background: #f1f5f9; padding: 2px 6px; border: 1px solid #cbd5e1; font-family: var(--font-mono); font-size: 11px; font-weight: 600;">C.</code>, <code style="background: #f1f5f9; padding: 2px 6px; border: 1px solid #cbd5e1; font-family: var(--font-mono); font-size: 11px; font-weight: 600;">D.</code>.
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 10px; border-top: 1px dashed #e5e7eb; padding-top: 10px;">
+                                    <span style="color: var(--accent); font-weight: bold;">04.</span>
+                                    <div>
+                                        <strong style="color: var(--ink); font-weight: 700;">Khai báo đáp án đúng:</strong>
+                                        Có thể gạch chân chữ cái phương án ở đề gốc (ví dụ: <code style="background: #f1f5f9; padding: 2px 6px; border: 1px solid #cbd5e1; font-family: var(--font-mono); font-size: 11px; font-weight: 600;"><u>A</u>.</code>) hoặc để bảng đáp án / phần giải chi tiết có cú pháp dạng <em>"Câu 1. Chọn A"</em> cuối file Word.
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 10px; border-top: 1px dashed #e5e7eb; padding-top: 10px;">
+                                    <span style="color: var(--accent); font-weight: bold;">05.</span>
+                                    <div>
+                                        <strong style="color: var(--ink); font-weight: 700;">Nhóm câu hỏi chùm:</strong>
+                                        Nếu có đoạn văn hoặc dữ kiện dùng chung cho nhiều câu, hãy bắt đầu bằng câu chỉ dẫn <em>"Sử dụng thông tin sau để trả lời..."</em> để khóa cố định nhóm này lại khi trộn đề.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-primary" onclick="window.location.href='demau.docx'" style="margin-top: auto; padding: 12px; width: 100%; border-radius: 0; font-size: 13px;">
+                                📥 TẢI FILE WORD MẪU CHUẨN (demau.docx)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Admin Management -->
+                <div class="tab-content" id="tab-content-admin">
+                    <div class="config-card admin-card">
+                        <h3 class="card-title">🛡️ Quản lý người dùng</h3>
+
+                        <!-- Stats Panel -->
+                        <div class="admin-stats-panel" id="admin-stats-panel">
+                            <div class="admin-stat-card stat-total">
+                                <span class="admin-stat-number" id="stat-total">—</span>
+                                <span class="admin-stat-label">Tổng tài khoản</span>
+                            </div>
+                            <div class="admin-stat-card stat-pending">
+                                <span class="admin-stat-number" id="stat-pending">—</span>
+                                <span class="admin-stat-label">Chờ duyệt</span>
+                            </div>
+                            <div class="admin-stat-card stat-pro">
+                                <span class="admin-stat-number" id="stat-pro">—</span>
+                                <span class="admin-stat-label">Đang kích hoạt</span>
+                            </div>
+                            <div class="admin-stat-card stat-expired">
+                                <span class="admin-stat-number" id="stat-expired">—</span>
+                                <span class="admin-stat-label">Hết hạn</span>
+                            </div>
+                        </div>
+
+                        <!-- Search + Filter row -->
+                        <div class="admin-search-wrapper">
+                            <input type="text" id="admin-search" class="admin-search-input" placeholder="🔍 Tìm theo email hoặc tên...">
+                            <select id="admin-filter-status" class="admin-filter-select">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="pending">Chờ duyệt</option>
+                                <option value="pro">PRO (Trọn đời)</option>
+                                <option value="1_year">PRO (1 Năm)</option>
+                                <option value="6_months">PRO (6 Tháng)</option>
+                                <option value="expired">Đã hết hạn</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                            <button class="btn btn-secondary admin-refresh-btn" id="admin-refresh-btn">🔄 Làm mới</button>
+                        </div>
+                        
+                        <!-- Bulk actions panel -->
+                        <div class="admin-bulk-actions" id="admin-bulk-actions">
+                            <span id="selected-count-text">Đã chọn: 0 tài khoản</span>
+                            <button id="admin-bulk-delete-btn" class="admin-btn-delete">
+                                🗑️ Xóa các tài khoản đã chọn
+                            </button>
+                        </div>
+
+                        <div id="admin-users-list" class="admin-users-list">
+                            <!-- User rows will go here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Entirely Output Files -->
+            <section class="panel status-panel">
+                <div class="card output-card output-card-dashed ex-style-69" id="output-card" >
+                    <div class="label output-card-label">Results // Tệp kết quả đã tạo</div>
+                    
+                    <!-- Output list (Zip download button) - FIXED AT TOP -->
+                    <div class="output-list ex-style-70" id="output-list" >
+                        <!-- Output items will be inserted here -->
+                    </div>
+
+                    <!-- Progress & Log Card (Moved here) -->
+                    <div class="log-card ex-style-71" >
+                        <div class="label ex-style-72" >Progress & System Log</div>
+                        
+                        <!-- Progress Bar -->
+                        <div class="progress-container">
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill ex-style-73" id="progress-fill" ></div>
+                            </div>
+                            <span class="progress-text" id="progress-text">Chờ tệp đề mẫu...</span>
+                        </div>
+
+                        <!-- Log console -->
+                        <div class="log-console ex-style-74" id="log-console" >
+                            <div class="log-line info">[Hệ thống] Ứng dụng đã sẵn sàng. Vui lòng chọn tệp đề gốc để bắt đầu.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <footer class="app-footer">
+            <p id="app-footer-text">pH-mix - Phần mềm hỗ trợ trộn đề mới. Giữ nguyên công thức MathType và hình ảnh. | 💬 Zalo hỗ trợ: 0982.722.036</p>
+        </footer>
+    </div>
+
+    <!-- Modal: Metadata Editor for Question Bank -->
+    <div id="metadata-editor-modal" class="meta-modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="meta-modal-title">
+        <div class="meta-modal-box">
+            <div class="meta-modal-header">
+                <h3 class="meta-modal-title" id="meta-modal-title">✏️ Chỉnh sửa phân loại câu hỏi</h3>
+                <button class="meta-modal-close" id="meta-modal-close-btn" title="Đóng">&times;</button>
+            </div>
+            <div class="meta-modal-body">
+                <div class="meta-field-group">
+                    <label class="meta-label" for="meta-subject">📚 Môn học</label>
+                    <select id="meta-subject" class="meta-select">
+                        <option value="Chưa phân loại">Chưa phân loại</option>
+                        <option value="Toán">Toán</option>
+                        <option value="Vật lý">Vật lý</option>
+                        <option value="Hóa học">Hóa học</option>
+                        <option value="Sinh học">Sinh học</option>
+                        <option value="Ngữ văn">Ngữ văn</option>
+                        <option value="Tiếng Anh">Tiếng Anh</option>
+                        <option value="Lịch sử">Lịch sử</option>
+                        <option value="Địa lý">Địa lý</option>
+                        <option value="GDCD">GDCD</option>
+                        <option value="Tin học">Tin học</option>
+                        <option value="Công nghệ">Công nghệ</option>
+                        <option value="KHTN">KHTN</option>
+                        <option value="KHXH">KHXH</option>
+                        <option value="Khác">Khác</option>
+                    </select>
+                </div>
+                <div class="meta-field-group">
+                    <label class="meta-label" for="meta-grade">🎓 Khối lớp</label>
+                    <select id="meta-grade" class="meta-select">
+                        <option value="Chưa phân loại">Chưa phân loại</option>
+                        <option value="Lớp 6">Lớp 6</option>
+                        <option value="Lớp 7">Lớp 7</option>
+                        <option value="Lớp 8">Lớp 8</option>
+                        <option value="Lớp 9">Lớp 9</option>
+                        <option value="Lớp 10">Lớp 10</option>
+                        <option value="Lớp 11">Lớp 11</option>
+                        <option value="Lớp 12">Lớp 12</option>
+                        <option value="Đại học">Đại học</option>
+                    </select>
+                </div>
+                <div class="meta-field-group">
+                    <label class="meta-label" for="meta-difficulty">⚡ Độ khó</label>
+                    <select id="meta-difficulty" class="meta-select">
+                        <option value="Chưa phân loại">Chưa phân loại</option>
+                        <option value="Nhận biết">Nhận biết</option>
+                        <option value="Thông hiểu">Thông hiểu</option>
+                        <option value="Vận dụng">Vận dụng</option>
+                        <option value="Vận dụng cao">Vận dụng cao</option>
+                    </select>
+                </div>
+                <div class="meta-field-group">
+                    <label class="meta-label" for="meta-chapter">📖 Chương / Chủ đề</label>
+                    <input type="text" id="meta-chapter" class="meta-input" placeholder="VD: Chương 1 - Hàm số...">
+                </div>
+                <div class="meta-field-group">
+                    <label class="meta-label" for="meta-lesson">📝 Bài / Tiết</label>
+                    <input type="text" id="meta-lesson" class="meta-input" placeholder="VD: Bài 3 - Đạo hàm...">
+                </div>
+            </div>
+            <div class="meta-modal-footer">
+                <button class="btn btn-secondary" id="meta-modal-cancel-btn">Hủy</button>
+                <button class="btn btn-primary" id="meta-modal-save-btn">💾 Lưu phân loại</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for QR full-size view -->
+    <div id="qr-modal" class="qr-modal" style="display: none;">
+        <span class="qr-modal-close">&times;</span>
+        <div class="qr-modal-content ex-style-75" >
+            <div class="ex-style-76" >
+                <h3 class="ex-style-77" >Thông tin thanh toán</h3>
+                <p class="ex-style-78" >Chuyển khoản để kích hoạt bản quyền pH-mix Pro</p>
+            </div>
+            <div class="ex-style-79" >
+                <div class="ex-style-80" >
+                    <span class="ex-style-81" >Chủ tài khoản</span>
+                    <span class="ex-style-82" >Lê Việt Thanh</span>
+                </div>
+                <div class="ex-style-80" >
+                    <span class="ex-style-81" >Số tài khoản (Click để sao chép)</span>
+                    <span class="ex-style-83" id="modal-bank-no" >938118 <span class="ex-style-84" >📋 Sao chép</span></span>
+                </div>
+                <div class="ex-style-80" >
+                    <span class="ex-style-81" >Ngân hàng</span>
+                    <span class="ex-style-85" >MBBank (Ngân hàng Quân đội)</span>
+                </div>
+                <div class="ex-style-86" >
+                    <span class="ex-style-81" >Nội dung chuyển khoản</span>
+                    <span class="ex-style-87" >PHMIX [Email của bạn]</span>
+                </div>
+            </div>
+            <div class="ex-style-88" >
+                Sau khi chuyển khoản, vui lòng nhắn tin qua Zalo <strong class="ex-style-89" >0982.722.036</strong> kèm email đăng ký để được kích hoạt Pro ngay lập tức!
+            </div>
+        </div>
+    </div>
+
+    <!-- Interface scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc, addDoc, query, where, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+        import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-storage.js";
+
+        // Default production config
+        let firebaseConfig = {
+            apiKey: "AIzaSyAzBQKbtGYqrLA8piYpugoPWzD6MXJMP-Y",
+            authDomain: "phmix-studio.firebaseapp.com",
+            projectId: "phmix-studio",
+            storageBucket: "phmix-studio.firebasestorage.app",
+            messagingSenderId: "263545065778",
+            appId: "1:263545065778:web:4ef153875243e18798472b",
+            measurementId: "G-8P55M47XKF"
+        };
+
+        async function init() {
+            const app = initializeApp(firebaseConfig);
+            window.firebaseAuth = getAuth(app);
+            const dbId = firebaseConfig.firestoreDatabaseId || firebaseConfig.databaseId; window.firebaseDb = dbId ? getFirestore(app, dbId) : getFirestore(app);
+            window.firebaseStorage = getStorage(app);
+            window.firebaseAPI = { 
+                ref, uploadString, getDownloadURL,
+                signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, 
+                doc, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc, addDoc, query, where, orderBy, limit, serverTimestamp 
+            };
+            
+            // Signal that Firebase is ready
+            window.dispatchEvent(new Event('firebase-ready'));
+        }
+
+        init();
+    </script>
+    <script type="module" src="/tron-de/js/main.js"></script>
+</body>
+</html>

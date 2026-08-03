@@ -1,0 +1,105 @@
+/*
+ * pH-mix Landing Page - Design Tokens, Variables & Base Reset
+ */
+
+:root {
+    --bg-dark: #07050f;
+    --bg-card: rgba(22, 17, 43, 0.45);
+    --bg-card-hover: rgba(29, 23, 56, 0.65);
+    --border-color: rgba(255, 255, 255, 0.07);
+    --border-hover: rgba(139, 92, 246, 0.4);
+    
+    --primary: #8b5cf6;
+    --primary-light: #a78bfa;
+    --primary-glow: rgba(139, 92, 246, 0.25);
+    --secondary: #d946ef;
+    --cyan: #06b6d4;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    
+    --text-main: #f3f4f6;
+    --text-sub: #9ca3af;
+    --text-muted: #6b7280;
+    
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+/* Background glows */
+.glow-bg {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.glow-1 {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    top: -200px;
+    right: -100px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0) 70%);
+    border-radius: 50%;
+}
+
+.glow-2 {
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    top: 300px;
+    left: -200px;
+    background: radial-gradient(circle, rgba(217, 70, 239, 0.1) 0%, rgba(217, 70, 239, 0) 70%);
+    border-radius: 50%;
+}
+
+/* Keyframes */
+@keyframes animateGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes pulseGlow {
+    0% {
+        box-shadow: 0 0 15px rgba(236, 72, 153, 0.4), 0 0 5px rgba(139, 92, 246, 0.2);
+    }
+    100% {
+        box-shadow: 0 0 30px rgba(236, 72, 153, 0.8), 0 0 15px rgba(59, 130, 246, 0.5);
+    }
+}
+
+@keyframes buttonPulseGlow {
+    0% {
+        box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 32px rgba(239, 68, 68, 0.75);
+    }
+    100% {
+        box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+    }
+}

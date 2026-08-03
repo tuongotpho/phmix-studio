@@ -1,0 +1,25 @@
+# PyInstaller and builds
+build/
+dist/
+*.spec
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local license keys and test files
+.phmix_license.key
+.phmix_last_run
+output_test/
+TronDe_demau/
+
+# IDEs
+.vscode/
+.idea/
+
+# Node.js dependencies & environment
+node_modules/
+.env
+.env.production
+firebase-applet-config.json
+*.log

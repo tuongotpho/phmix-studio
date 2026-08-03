@@ -1,0 +1,42 @@
+{
+  "name": "ph-mix",
+  "version": "2.5.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch server.ts",
+    "start": "node dist/server.js",
+    "build": "tsc",
+    "test": "tsx --test tests/**/*.test.ts",
+    "test:rules": "firebase emulators:exec --project demo-phmix --only firestore \"tsx --test tests/rules/*.spec.ts\"",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@google/genai": "^2.12.0",
+    "@xmldom/xmldom": "^0.9.10",
+    "adm-zip": "^0.6.0",
+    "compression": "^1.8.1",
+    "cors": "^2.8.6",
+    "docx": "^9.7.1",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
+    "firebase-admin": "^14.2.0",
+    "helmet": "^8.3.0",
+    "jose": "^6.2.3",
+    "multer": "^2.2.0",
+    "qrcode": "^1.5.4",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.1",
+    "@types/adm-zip": "^0.5.8",
+    "@types/compression": "^1.8.1",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^20.11.0",
+    "@types/qrcode": "^1.5.6",
+    "firebase": "^12.17.0",
+    "tsx": "^4.23.0",
+    "typescript": "^5.5.4"
+  }
+}

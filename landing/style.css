@@ -1,0 +1,10 @@
+/*
+ * pH-mix Master Landing Stylesheet
+ * Modularized imports for CSS clean architecture
+ */
+
+@import url('./css/variables.css');
+@import url('./css/components.css');
+@import url('./css/navbar.css');
+@import url('./css/hero.css');
+@import url('./css/sections.css');
