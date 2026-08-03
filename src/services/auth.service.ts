@@ -69,8 +69,12 @@ export const userRoleCache = new LRUCache<string, CachedUserRole>(5000, 5 * 60 *
 // Bounded LRU cache for last code start per user / IP (30 minutes TTL)
 export const userLastCodeStartCache = new LRUCache<string, number>(2000, 30 * 60 * 1000);
 
+// Endpoint JWKS chính thức cho Firebase ID token. Đường dẫn phải đúng tuyệt đối:
+// createRemoteJWKSet nạp key lazy nên URL sai không làm sập lúc khởi động, mà khiến
+// MỌI lần jwtVerify() ném lỗi — hậu quả là mọi tài khoản đều bị hạ xuống 'guest'
+// và tính năng PRO/admin im lặng ngừng hoạt động.
 const JWKS = createRemoteJWKSet(
-  new URL('https://www.googleapis.com/serviceaccounts/jwks/securetoken@system.gserviceaccount.com')
+  new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com')
 );
 
 /**
