@@ -6,7 +6,9 @@ import { findChoiceStarts } from './src/shuffler/parser.js';
 import { isSeparatorElement } from './src/shuffler/xml-utils.js';
 import {
   getUsableWidthTwips,
-  chooseColumnCount,
+  separatorHasBreak,
+  hasExplicitTabStops,
+  columnsFromBreaks,
   applyEvenTabStops,
   createSeparatorRun
 } from './src/shuffler/tab-layout.js';
@@ -15,12 +17,13 @@ import {
 const MAX_REMOTE_MEDIA = 100;
 
 /**
- * Căn đều A/B/C/D cho đoạn phương án lấy từ rawXmls của Ngân hàng.
+ * Căn thẳng hàng A/B/C/D cho đoạn phương án lấy từ rawXmls của Ngân hàng, GIỮ NGUYÊN
+ * cách dàn của đề gốc.
  *
  * rawXmls là XML đoạn văn giữ nguyên từ file gốc lúc câu hỏi được nạp vào kho, nên
- * cách trình bày xấu của đề gốc theo vào đây. Dựng lại dấu phân cách bằng tab/br và
- * khai báo tab stop chia đều — nếu không, tab trong đề gốc sẽ dừng ở mốc mặc định
- * 720 twip và các cột lệch nhau tuỳ độ dài chữ.
+ * số phương án mỗi hàng và tab stop (nếu có) đều đo được ngay tại đây. Chỉ bổ sung
+ * mốc tab khi đề gốc chưa khai báo — thiếu mốc thì Word dùng mặc định 720 twip và
+ * các cột lệch nhau tuỳ độ dài chữ.
  *
  * Không tìm đủ cả 4 nhãn thì bỏ qua: đoạn đó không phải dòng phương án.
  */
@@ -43,25 +46,33 @@ function normalizeChoiceParagraph(p_elm: any, doc: any, usableWidth: number): vo
     return children.slice(starts[c], to);
   });
 
-  // Bỏ separator cũ ở đuôi từng phương án, chúng được dựng lại theo số cột.
-  for (const seg of segments) {
+  // Tách separator ra khỏi đuôi từng phương án: chúng vừa là dữ liệu để đo lưới,
+  // vừa được dựng lại bằng node mới (đề gốc hay ngăn bằng dấu cách, mà dấu cách
+  // thì tab stop không có tác dụng).
+  const separators: any[][] = segments.map(seg => {
+    const seps: any[] = [];
     while (seg.length > 0) {
       const last = seg[seg.length - 1];
-      if (last.nodeType === 1 && isSeparatorElement(last)) seg.pop();
+      if (last.nodeType === 1 && isSeparatorElement(last)) seps.unshift(seg.pop());
       else break;
     }
-  }
+    return seps;
+  });
 
-  const columns = chooseColumnCount(segments, usableWidth);
+  const breakAfter = separators.map(separatorHasBreak);
+  const columns = columnsFromBreaks(breakAfter, 4);
+  const keepOriginalTabs = hasExplicitTabStops(p_elm);
 
   children.forEach(child => p_elm.removeChild(child));
   head.forEach(node => p_elm.appendChild(node));
   segments.forEach((seg, i) => {
     seg.forEach(node => p_elm.appendChild(node));
-    if (i < 3) p_elm.appendChild(createSeparatorRun(doc, i, columns));
+    if (i < 3) p_elm.appendChild(createSeparatorRun(doc, i, breakAfter));
   });
 
-  applyEvenTabStops(p_elm, doc, columns, usableWidth);
+  if (!keepOriginalTabs) {
+    applyEvenTabStops(p_elm, doc, columns, usableWidth);
+  }
 }
 
 export async function generateBankExamDocxFromXml(

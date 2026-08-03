@@ -11,7 +11,9 @@ import {
 } from './xml-utils.js';
 import {
   getUsableWidthTwips,
-  chooseColumnCount,
+  separatorHasBreak,
+  hasExplicitTabStops,
+  columnsFromBreaks,
   applyEvenTabStops,
   createSeparatorRun
 } from './tab-layout.js';
@@ -258,28 +260,32 @@ export function exportShuffledXml(
 
           const labels = ['A', 'B', 'C', 'D'];
           const clean_options: Record<string, any[]> = {};
+          const original_separators: Record<string, any[]> = {};
 
           for (const char of ['A', 'B', 'C', 'D'] as const) {
             const seg = options[char].map((node: any) => cloneElement(node, doc));
             const opt_runs = [...seg];
-            // Cắt bỏ separator cũ ở đuôi mỗi phương án — chúng sẽ được thay bằng
-            // tab/br dựng mới theo số cột, xem tab-layout.ts.
+            const sep_runs: any[] = [];
             while (opt_runs.length > 0) {
               const lastNode = opt_runs[opt_runs.length - 1];
               if (lastNode.nodeType === 1 && isSeparatorElement(lastNode)) {
-                opt_runs.pop();
+                sep_runs.unshift(opt_runs.pop()!);
               } else {
                 break;
               }
             }
             clean_options[char] = opt_runs;
+            original_separators[char] = sep_runs;
           }
 
-          const columns = chooseColumnCount(
-            new_order.map(c => clean_options[c]),
-            usable_width
-          );
-          applyEvenTabStops(p_elm, doc, columns, usable_width);
+          // Lưới đo theo VỊ TRÍ của đề gốc, không theo phương án: sau khi trộn,
+          // phương án nào rơi vào vị trí đó cũng nằm đúng ô cũ.
+          const break_after = labels.map(pos_char => separatorHasBreak(original_separators[pos_char]));
+          const columns = columnsFromBreaks(break_after, 4);
+          // Đề gốc tự đặt mốc tab thì giữ nguyên — đó chính là cách dàn tác giả muốn.
+          if (!hasExplicitTabStops(p_elm)) {
+            applyEvenTabStops(p_elm, doc, columns, usable_width);
+          }
 
           new_order.forEach((old_char, new_idx) => {
             const new_label = labels[new_idx];
@@ -292,7 +298,7 @@ export function exportShuffledXml(
             });
 
             if (new_idx < 3) {
-              p_elm.appendChild(createSeparatorRun(doc, new_idx, columns));
+              p_elm.appendChild(createSeparatorRun(doc, new_idx, break_after));
             }
           });
         } else if (layout === "four_paras") {
@@ -328,29 +334,34 @@ export function exportShuffledXml(
           });
 
           const clean_options: Record<string, any[]> = {};
+          const original_separators: Record<string, any[]> = {};
 
           for (const char of ['A', 'B', 'C', 'D'] as const) {
             const seg = options[char].map((node: any) => cloneElement(node, doc));
             const opt_runs = [...seg];
+            const sep_runs: any[] = [];
             while (opt_runs.length > 0) {
               const lastNode = opt_runs[opt_runs.length - 1];
               if (lastNode.nodeType === 1 && isSeparatorElement(lastNode)) {
-                opt_runs.pop();
+                sep_runs.unshift(opt_runs.pop()!);
               } else {
                 break;
               }
             }
             clean_options[char] = opt_runs;
+            original_separators[char] = sep_runs;
           }
 
-          // Mỗi đoạn chỉ chứa 2 phương án nên trần là 2 cột. Xét cả 4 phương án
-          // để hai đoạn dùng chung một số cột, tránh đoạn trên 2 cột đoạn dưới 1.
-          const columns_2p = chooseColumnCount(
-            new_order.map(c => clean_options[c]),
-            usable_width,
-            2
-          );
-          applyEvenTabStops(p1_elm, doc, columns_2p, usable_width);
+          // Mỗi đoạn chỉ chứa 2 phương án: đoạn 1 giữ A|B, đoạn 2 giữ C|D. Lưới đo
+          // từ separator giữa cặp đầu của mỗi đoạn — chính là vị trí A và C.
+          const break_p1 = [separatorHasBreak(original_separators['A'])];
+          const break_p2 = [separatorHasBreak(original_separators['C'])];
+          const columns_p1 = columnsFromBreaks(break_p1, 2);
+          const columns_p2 = columnsFromBreaks(break_p2, 2);
+
+          if (!hasExplicitTabStops(p1_elm)) {
+            applyEvenTabStops(p1_elm, doc, columns_p1, usable_width);
+          }
 
           [new_order[0], new_order[1]].forEach((old_char, new_idx) => {
             const new_label = ['A', 'B'][new_idx];
@@ -363,7 +374,7 @@ export function exportShuffledXml(
             });
 
             if (new_idx === 0) {
-              p1_elm.appendChild(createSeparatorRun(doc, new_idx, columns_2p));
+              p1_elm.appendChild(createSeparatorRun(doc, new_idx, break_p1));
             }
           });
 
@@ -378,7 +389,9 @@ export function exportShuffledXml(
             }
           });
 
-          applyEvenTabStops(p2_elm, doc, columns_2p, usable_width);
+          if (!hasExplicitTabStops(p2_elm)) {
+            applyEvenTabStops(p2_elm, doc, columns_p2, usable_width);
+          }
 
           [new_order[2], new_order[3]].forEach((old_char, new_idx) => {
             const new_label = ['C', 'D'][new_idx];
@@ -391,7 +404,7 @@ export function exportShuffledXml(
             });
 
             if (new_idx === 0) {
-              p2_elm.appendChild(createSeparatorRun(doc, new_idx, columns_2p));
+              p2_elm.appendChild(createSeparatorRun(doc, new_idx, break_p2));
             }
           });
 
