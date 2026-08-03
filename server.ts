@@ -1,3 +1,7 @@
+// PHẢI đứng trước mọi import khác: src/config/env.ts đọc process.env ngay lúc
+// nạp module, nên .env phải vào process.env trước đó. Trên App Hosting / Cloud Run
+// không có file .env và dotenv tự bỏ qua — biến đến từ apphosting.yaml.
+import 'dotenv/config';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';

@@ -5,3 +5,43 @@ runConfig:
   concurrency: 20
   cpu: 1
   memoryMiB: 1024
+
+# Biến môi trường. Thiếu ADMIN_EMAIL là mọi route /api/admin/* trả 403 dù giao
+# diện đã hiện tab Quản trị — UI đọc users/{uid}.status, còn requireAdmin chỉ
+# chấp nhận custom claim `admin` hoặc email trùng ADMIN_EMAIL.
+env:
+  - variable: ADMIN_EMAIL
+    value: vietthanh228@gmail.com
+    availability:
+      - RUNTIME
+
+  # PHẢI trùng firebaseConfig.projectId trong gui/index.html, nếu không mọi ID
+  # token đều verify thất bại và tài khoản PRO bị hạ xuống 'guest'.
+  - variable: FIREBASE_PROJECT_ID
+    value: phmix-studio
+    availability:
+      - RUNTIME
+
+  # CORS ở production khoá theo giá trị này (mặc định https://phmix.com).
+  # Bỏ comment và điền domain thật của backend App Hosting sau khi tạo xong.
+  # - variable: PUBLIC_URL
+  #   value: https://<backend>--phmix-studio.<region>.hosted.app
+  #   availability:
+  #     - RUNTIME
+
+  # Tạo secret trước khi deploy:
+  #   firebase apphosting:secrets:set GEMINI_API_KEY --project phmix-studio
+  - variable: GEMINI_API_KEY
+    secret: GEMINI_API_KEY
+    availability:
+      - RUNTIME
+
+  - variable: TELEGRAM_BOT_TOKEN
+    secret: TELEGRAM_BOT_TOKEN
+    availability:
+      - RUNTIME
+
+  - variable: TELEGRAM_CHAT_ID
+    secret: TELEGRAM_CHAT_ID
+    availability:
+      - RUNTIME
