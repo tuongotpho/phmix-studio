@@ -226,7 +226,8 @@ export function bindBuilderEventHandlers() {
                 if (configStart && codeStartEl) configStart.value = codeStartEl.value;
 
                 import('./shuffle.js').then(shuffleModule => {
-                    shuffleModule.setSelectedWebFile(tempFile);
+                    // Cờ fromBuilder: câu hỏi đã có sẵn trong Ngân hàng, đừng lưu lại lần nữa.
+                    shuffleModule.setSelectedWebFile(tempFile, true);
                     shuffleModule.validateFile(tempFile);
                     shuffleModule.parseAndRenderStage1Questions(tempFile);
                 });

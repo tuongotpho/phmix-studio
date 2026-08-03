@@ -15,8 +15,17 @@ export let cachedUnansweredList = [];
 export let parsedQuestionsCache = [];
 export let lastUsedCodeStart = null;
 
-export function setSelectedWebFile(file) {
+/**
+ * Đề đang trộn được lắp ráp từ Ngân hàng (tab Lắp ráp) chứ không phải file người
+ * dùng tự tải lên. Các câu hỏi này đã nằm sẵn trong Ngân hàng, nên bước tự động
+ * lưu sau khi trộn phải bỏ qua chúng — nếu không mỗi lần trộn lại nhân bản thêm
+ * một bộ câu hỏi y hệt.
+ */
+export let isFromBuilder = false;
+
+export function setSelectedWebFile(file, fromBuilder = false) {
     selectedWebFile = file;
+    isFromBuilder = fromBuilder;
 }
 
 export async function validateFile(file) {
@@ -258,7 +267,9 @@ export async function executeShuffle() {
 
         lastUsedCodeStart = codeStart;
 
-        await saveParsedQuestionsToBankAndExamMeta(selectedWebFile, numCodes, codeStart);
+        await saveParsedQuestionsToBankAndExamMeta(selectedWebFile, numCodes, codeStart, {
+            skipQuestions: isFromBuilder
+        });
 
         const blob = await response.blob();
         

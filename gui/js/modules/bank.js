@@ -11,78 +11,92 @@ export let bankQuestionsCache = [];
 export let bankSelectedIds = new Set();
 export let bankCurrentPage = 1;
 
-export async function saveParsedQuestionsToBankAndExamMeta(file, numCodes, codeStart) {
+/**
+ * @param {{ skipQuestions?: boolean }} [options] skipQuestions = true khi đề được
+ *   lắp ráp từ chính Ngân hàng: chỉ ghi metadata đề thi, không chèn lại câu hỏi.
+ */
+export async function saveParsedQuestionsToBankAndExamMeta(file, numCodes, codeStart, options = {}) {
     if (!currentUser || !window.firebaseAPI || !window.firebaseDb) return;
     const chkEnableMatrix = document.getElementById('chk-enable-matrix');
     if (chkEnableMatrix && !chkEnableMatrix.checked) return;
+
+    const skipQuestions = options.skipQuestions === true;
 
     const { addDoc, collection, serverTimestamp } = window.firebaseAPI;
     const db = window.firebaseDb;
 
     let savedCount = 0;
+    const savedMessage = () => skipQuestions
+        ? '💾 Đã lưu tệp đề thi vào Kho Ngân Hàng Cá Nhân (câu hỏi đã có sẵn, không lưu lại).'
+        : `💾 Đã tự động lưu ${savedCount} câu hỏi & tệp đề thi vào Kho Ngân Hàng Cá Nhân!`;
+
     const doSave = async () => {
         savedCount = 0;
-        
-        addLog(`⏳ Đang tải ảnh lên Firebase Storage (nếu có)...`, 'info');
-        for (const q of parsedQuestionsCache) {
-            if (q.mediaItems && q.mediaItems.length > 0) {
-                for (const media of q.mediaItems) {
-                    if (media.base64) {
-                        try {
-                            const ext = media.target ? media.target.split('.').pop() : 'png';
-                            const url = await uploadBase64ToStorage(media.base64, ext);
-                            media.url = url;
-                            
-                            if (q.questionText) q.questionText = q.questionText.split(media.base64).join(url);
-                            if (q.options) {
-                                q.options.forEach(opt => {
-                                    if (opt.content) opt.content = opt.content.split(media.base64).join(url);
-                                    if (opt.text) opt.text = opt.text.split(media.base64).join(url);
-                                });
+
+        if (skipQuestions) {
+            addLog('ℹ️ Đề được lắp ráp từ Ngân hàng — bỏ qua bước lưu câu hỏi để tránh trùng lặp.', 'info');
+        } else {
+            addLog(`⏳ Đang tải ảnh lên Firebase Storage (nếu có)...`, 'info');
+            for (const q of parsedQuestionsCache) {
+                if (q.mediaItems && q.mediaItems.length > 0) {
+                    for (const media of q.mediaItems) {
+                        if (media.base64) {
+                            try {
+                                const ext = media.target ? media.target.split('.').pop() : 'png';
+                                const url = await uploadBase64ToStorage(media.base64, ext);
+                                media.url = url;
+
+                                if (q.questionText) q.questionText = q.questionText.split(media.base64).join(url);
+                                if (q.options) {
+                                    q.options.forEach(opt => {
+                                        if (opt.content) opt.content = opt.content.split(media.base64).join(url);
+                                        if (opt.text) opt.text = opt.text.split(media.base64).join(url);
+                                    });
+                                }
+                                if (q.statements) {
+                                    q.statements.forEach(stmt => {
+                                        if (stmt.content) stmt.content = stmt.content.split(media.base64).join(url);
+                                        if (stmt.text) stmt.text = stmt.text.split(media.base64).join(url);
+                                    });
+                                }
+
+                                delete media.base64;
+                            } catch (err) {
+                                console.error("Lỗi tải ảnh lên storage:", err);
+                                addLog(`❌ Lỗi tải ảnh: ${err.message}`, 'error');
+                                throw err;
                             }
-                            if (q.statements) {
-                                q.statements.forEach(stmt => {
-                                    if (stmt.content) stmt.content = stmt.content.split(media.base64).join(url);
-                                    if (stmt.text) stmt.text = stmt.text.split(media.base64).join(url);
-                                });
-                            }
-                            
-                            delete media.base64;
-                        } catch (err) {
-                            console.error("Lỗi tải ảnh lên storage:", err);
-                            addLog(`❌ Lỗi tải ảnh: ${err.message}`, 'error');
-                            throw err;
                         }
                     }
                 }
             }
-        }
-        
-        for (const q of parsedQuestionsCache) {
-            let finalQText = q.questionText || '';
-            finalQText = finalQText.replace(/^\s*Câu\s*\d+\s*[:.\-]?\s*/i, '').trim();
-            
-            await addDoc(collection(db, "questions"), {
-                ownerId: currentUser.uid,
-                ownerEmail: currentUser.email || '',
-                questionText: finalQText,
-                rawXmls: q.rawXmls || [],
-                mediaItems: q.mediaItems || [],
-                type: q.type || 'choice',
-                options: q.options || [],
-                statements: q.statements || [],
-                correctAnswer: q.correctAnswer || null,
-                classification: q.classification || {
-                    subject: 'Chưa phân loại',
-                    grade: 'Chưa phân loại',
-                    chapter: 'Chưa phân loại',
-                    lesson: 'Chưa phân loại',
-                    difficulty: 'Chưa phân loại'
-                },
-                isPublic: false,
-                createdAt: serverTimestamp()
-            });
-            savedCount++;
+
+            for (const q of parsedQuestionsCache) {
+                let finalQText = q.questionText || '';
+                finalQText = finalQText.replace(/^\s*Câu\s*\d+\s*[:.\-]?\s*/i, '').trim();
+
+                await addDoc(collection(db, "questions"), {
+                    ownerId: currentUser.uid,
+                    ownerEmail: currentUser.email || '',
+                    questionText: finalQText,
+                    rawXmls: q.rawXmls || [],
+                    mediaItems: q.mediaItems || [],
+                    type: q.type || 'choice',
+                    options: q.options || [],
+                    statements: q.statements || [],
+                    correctAnswer: q.correctAnswer || null,
+                    classification: q.classification || {
+                        subject: 'Chưa phân loại',
+                        grade: 'Chưa phân loại',
+                        chapter: 'Chưa phân loại',
+                        lesson: 'Chưa phân loại',
+                        difficulty: 'Chưa phân loại'
+                    },
+                    isPublic: false,
+                    createdAt: serverTimestamp()
+                });
+                savedCount++;
+            }
         }
 
         await addDoc(collection(db, "exams"), {
@@ -106,7 +120,7 @@ export async function saveParsedQuestionsToBankAndExamMeta(file, numCodes, codeS
             try {
                 await currentUser.getIdToken(true);
                 await doSave();
-                addLog(`💾 Đã tự động lưu ${savedCount} câu hỏi & tệp đề thi vào Kho Ngân Hàng Cá Nhân!`, 'success');
+                addLog(savedMessage(), 'success');
                 return;
             } catch (retryErr) {
                 e = retryErr;
