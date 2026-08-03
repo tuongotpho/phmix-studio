@@ -2,9 +2,67 @@ import AdmZip from 'adm-zip';
 import { DOMParser, XMLSerializer } from '@xmldom/xmldom';
 import { emptyTemplateBase64 } from './emptyTemplate.js';
 import { fetchMediaStrict } from './src/services/media-fetch.js';
+import { findChoiceStarts } from './src/shuffler/parser.js';
+import { isSeparatorElement } from './src/shuffler/xml-utils.js';
+import {
+  getUsableWidthTwips,
+  chooseColumnCount,
+  applyEvenTabStops,
+  createSeparatorRun
+} from './src/shuffler/tab-layout.js';
 
 /** Trần số ảnh tải từ xa cho mỗi lần tạo đề — chặn khuếch đại (500 câu × nhiều ảnh). */
 const MAX_REMOTE_MEDIA = 100;
+
+/**
+ * Căn đều A/B/C/D cho đoạn phương án lấy từ rawXmls của Ngân hàng.
+ *
+ * rawXmls là XML đoạn văn giữ nguyên từ file gốc lúc câu hỏi được nạp vào kho, nên
+ * cách trình bày xấu của đề gốc theo vào đây. Dựng lại dấu phân cách bằng tab/br và
+ * khai báo tab stop chia đều — nếu không, tab trong đề gốc sẽ dừng ở mốc mặc định
+ * 720 twip và các cột lệch nhau tuỳ độ dài chữ.
+ *
+ * Không tìm đủ cả 4 nhãn thì bỏ qua: đoạn đó không phải dòng phương án.
+ */
+function normalizeChoiceParagraph(p_elm: any, doc: any, usableWidth: number): void {
+  const ln = p_elm.localName || p_elm.tagName?.split(':').pop();
+  if (ln !== 'p') return;
+
+  const chars = ['A', 'B', 'C', 'D'] as const;
+  const starts = findChoiceStarts(p_elm);
+  if (!chars.every(c => starts[c] > -1)) return;
+  // Nhãn phải xuất hiện đúng thứ tự A→D trên cùng một đoạn thì mới cắt được segment.
+  for (let i = 1; i < chars.length; i++) {
+    if (starts[chars[i]] <= starts[chars[i - 1]]) return;
+  }
+
+  const children = Array.from(p_elm.childNodes);
+  const head = children.slice(0, starts['A']);
+  const segments: any[][] = chars.map((c, i) => {
+    const to = i < 3 ? starts[chars[i + 1]] : children.length;
+    return children.slice(starts[c], to);
+  });
+
+  // Bỏ separator cũ ở đuôi từng phương án, chúng được dựng lại theo số cột.
+  for (const seg of segments) {
+    while (seg.length > 0) {
+      const last = seg[seg.length - 1];
+      if (last.nodeType === 1 && isSeparatorElement(last)) seg.pop();
+      else break;
+    }
+  }
+
+  const columns = chooseColumnCount(segments, usableWidth);
+
+  children.forEach(child => p_elm.removeChild(child));
+  head.forEach(node => p_elm.appendChild(node));
+  segments.forEach((seg, i) => {
+    seg.forEach(node => p_elm.appendChild(node));
+    if (i < 3) p_elm.appendChild(createSeparatorRun(doc, i, columns));
+  });
+
+  applyEvenTabStops(p_elm, doc, columns, usableWidth);
+}
 
 export async function generateBankExamDocxFromXml(
   title: string,
@@ -30,6 +88,7 @@ export async function generateBankExamDocxFromXml(
   
   let relIdCounter = 1000;
   let remoteFetches = 0;
+  const usableWidth = getUsableWidthTwips(docXml);
 
   function appendHeader(text: string, isBold: boolean = true) {
     const p = docXml.createElement('w:p');
@@ -211,7 +270,10 @@ export async function generateBankExamDocxFromXml(
         } else {
            importedNode = el.cloneNode(true);
         }
-        
+
+        // Sau khi import để tab/br được tạo bằng chính docXml.
+        normalizeChoiceParagraph(importedNode, docXml, usableWidth);
+
         body.appendChild(importedNode);
       });
 

@@ -5,11 +5,16 @@ import {
   getElementsByTagNameLocal,
   replaceLabelAndUnderline,
   isSeparatorElement,
-  createDefaultTabRun,
   updateQuestionNumber,
   createFooterCodeParagraph,
   createCodeBoxTable
 } from './xml-utils.js';
+import {
+  getUsableWidthTwips,
+  chooseColumnCount,
+  applyEvenTabStops,
+  createSeparatorRun
+} from './tab-layout.js';
 
 function cloneElement(el: any, doc: any): any {
   return doc.importNode(el, true);
@@ -186,6 +191,9 @@ export function exportShuffledXml(
     }
   }
 
+  // Đọc trước khi dọn body: sau khi xoá hết con thì sectPr gốc không còn tra được.
+  const usable_width = getUsableWidthTwips(sectPr);
+
   const originalChildren = Array.from(bodyEl.childNodes);
   originalChildren.forEach(child => {
     bodyEl.removeChild(child);
@@ -250,23 +258,28 @@ export function exportShuffledXml(
 
           const labels = ['A', 'B', 'C', 'D'];
           const clean_options: Record<string, any[]> = {};
-          const original_separators: Record<string, any[]> = {};
 
           for (const char of ['A', 'B', 'C', 'D'] as const) {
             const seg = options[char].map((node: any) => cloneElement(node, doc));
             const opt_runs = [...seg];
-            const sep_runs: any[] = [];
+            // Cắt bỏ separator cũ ở đuôi mỗi phương án — chúng sẽ được thay bằng
+            // tab/br dựng mới theo số cột, xem tab-layout.ts.
             while (opt_runs.length > 0) {
               const lastNode = opt_runs[opt_runs.length - 1];
               if (lastNode.nodeType === 1 && isSeparatorElement(lastNode)) {
-                sep_runs.unshift(opt_runs.pop()!);
+                opt_runs.pop();
               } else {
                 break;
               }
             }
             clean_options[char] = opt_runs;
-            original_separators[char] = sep_runs;
           }
+
+          const columns = chooseColumnCount(
+            new_order.map(c => clean_options[c]),
+            usable_width
+          );
+          applyEvenTabStops(p_elm, doc, columns, usable_width);
 
           new_order.forEach((old_char, new_idx) => {
             const new_label = labels[new_idx];
@@ -279,14 +292,7 @@ export function exportShuffledXml(
             });
 
             if (new_idx < 3) {
-              const pos_char = labels[new_idx];
-              let sep_to_append = original_separators[pos_char] || [];
-              if (sep_to_append.length === 0) {
-                sep_to_append = [createDefaultTabRun(doc)];
-              }
-              sep_to_append.forEach(node => {
-                p_elm.appendChild(node.cloneNode(true));
-              });
+              p_elm.appendChild(createSeparatorRun(doc, new_idx, columns));
             }
           });
         } else if (layout === "four_paras") {
@@ -322,23 +328,29 @@ export function exportShuffledXml(
           });
 
           const clean_options: Record<string, any[]> = {};
-          const original_separators: Record<string, any[]> = {};
 
           for (const char of ['A', 'B', 'C', 'D'] as const) {
             const seg = options[char].map((node: any) => cloneElement(node, doc));
             const opt_runs = [...seg];
-            const sep_runs: any[] = [];
             while (opt_runs.length > 0) {
               const lastNode = opt_runs[opt_runs.length - 1];
               if (lastNode.nodeType === 1 && isSeparatorElement(lastNode)) {
-                sep_runs.unshift(opt_runs.pop()!);
+                opt_runs.pop();
               } else {
                 break;
               }
             }
             clean_options[char] = opt_runs;
-            original_separators[char] = sep_runs;
           }
+
+          // Mỗi đoạn chỉ chứa 2 phương án nên trần là 2 cột. Xét cả 4 phương án
+          // để hai đoạn dùng chung một số cột, tránh đoạn trên 2 cột đoạn dưới 1.
+          const columns_2p = chooseColumnCount(
+            new_order.map(c => clean_options[c]),
+            usable_width,
+            2
+          );
+          applyEvenTabStops(p1_elm, doc, columns_2p, usable_width);
 
           [new_order[0], new_order[1]].forEach((old_char, new_idx) => {
             const new_label = ['A', 'B'][new_idx];
@@ -351,13 +363,7 @@ export function exportShuffledXml(
             });
 
             if (new_idx === 0) {
-              let sep_to_append = original_separators['A'] || [];
-              if (sep_to_append.length === 0) {
-                sep_to_append = [createDefaultTabRun(doc)];
-              }
-              sep_to_append.forEach(node => {
-                p1_elm.appendChild(node.cloneNode(true));
-              });
+              p1_elm.appendChild(createSeparatorRun(doc, new_idx, columns_2p));
             }
           });
 
@@ -372,6 +378,8 @@ export function exportShuffledXml(
             }
           });
 
+          applyEvenTabStops(p2_elm, doc, columns_2p, usable_width);
+
           [new_order[2], new_order[3]].forEach((old_char, new_idx) => {
             const new_label = ['C', 'D'][new_idx];
             const segment = clean_options[old_char];
@@ -383,13 +391,7 @@ export function exportShuffledXml(
             });
 
             if (new_idx === 0) {
-              let sep_to_append = original_separators['C'] || [];
-              if (sep_to_append.length === 0) {
-                sep_to_append = [createDefaultTabRun(doc)];
-              }
-              sep_to_append.forEach(node => {
-                p2_elm.appendChild(node.cloneNode(true));
-              });
+              p2_elm.appendChild(createSeparatorRun(doc, new_idx, columns_2p));
             }
           });
 
