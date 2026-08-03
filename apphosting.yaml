@@ -29,13 +29,9 @@ env:
   #   availability:
   #     - RUNTIME
 
-  # Tạo secret trước khi deploy:
-  #   firebase apphosting:secrets:set GEMINI_API_KEY --project phmix-studio
-  - variable: GEMINI_API_KEY
-    secret: GEMINI_API_KEY
-    availability:
-      - RUNTIME
-
+  # Thông báo đăng ký mới qua Telegram (notifier.ts). Tạo secret trước khi deploy:
+  #   firebase apphosting:secrets:set TELEGRAM_BOT_TOKEN --project phmix-studio
+  #   firebase apphosting:secrets:set TELEGRAM_CHAT_ID --project phmix-studio
   - variable: TELEGRAM_BOT_TOKEN
     secret: TELEGRAM_BOT_TOKEN
     availability:
