@@ -13,7 +13,7 @@ import {
 } from 'docx';
 import AdmZip from 'adm-zip';
 import { DOMParser, XMLSerializer } from '@xmldom/xmldom';
-import { createFooterCodeParagraph } from '../../shuffler.js';
+import { createFooterCodeParagraph } from '../shuffler/index.js';
 
 /**
  * Exports answer keys to XLSX format compatible with TNMaker.
@@ -195,6 +195,20 @@ export async function generateKeyTableDoc(all_keys: Record<number, any>): Promis
           tableRows.push(new TableRow({ children: headerCells }));
           tableRows.push(new TableRow({ children: ansCells }));
         }
+
+        // Bảng phải được chèn NGAY SAU tiêu đề "PHẦN I" của chính nó.
+        // Trước đây khối này nằm cuối vòng lặp mã đề, tức là sau cả bảng Phần II lẫn
+        // Phần III — nên tài liệu in ra có tiêu đề "PHẦN I" trống trơn ở trên, còn bảng
+        // đáp án Phần I thì trôi xuống dưới cùng không có tiêu đề. Đề chỉ có Phần I thì
+        // không lộ, nên lỗi sống sót lâu; đề đủ ba phần theo chuẩn 2025 thì lộ ngay.
+        if (tableRows.length > 0) {
+          children.push(
+            new Table({
+              rows: tableRows,
+              width: { size: 100, type: WidthType.PERCENTAGE }
+            })
+          );
+        }
       }
 
       // Part II Table
@@ -293,14 +307,6 @@ export async function generateKeyTableDoc(all_keys: Record<number, any>): Promis
         );
       }
 
-      if (tableRows.length > 0 && p1Count > 0) {
-        children.push(
-          new Table({
-            rows: tableRows,
-            width: { size: 100, type: WidthType.PERCENTAGE }
-          })
-        );
-      }
     });
   }
 
@@ -317,13 +323,22 @@ export async function generateKeyTableDoc(all_keys: Record<number, any>): Promis
 }
 
 /**
- * Build modified docx zip helper with synthesized code footer
+ * Nén sẵn phần TĨNH của gói .docx — mọi thứ trừ word/document.xml và word/footer1.xml,
+ * là hai phần duy nhất thay đổi theo mã đề.
+ *
+ * Vì sao tách riêng: trước đây buildModifiedDocxZip nhận thẳng danh sách entry đã giải
+ * nén và gọi addFile() cho từng cái ở MỖI mã đề, nên adm-zip nén lại toàn bộ ảnh cho
+ * từng bản — 24 mã đề × 2 bản (học sinh/giáo viên) = 48 lần nén cùng một bộ ảnh không
+ * hề đổi.
+ *
+ * Đo trên gui/demau_1.docx (8 mã đề, tức 16 lần đóng gói):
+ *   không có ảnh (190KB) : đóng gói chiếm  7% tổng thời gian
+ *   thêm 8MB ảnh         : đóng gói chiếm 52% tổng thời gian — gấp đôi thời gian chờ
+ *
+ * Nén một lần rồi dựng lại AdmZip từ buffer đó: adm-zip giữ nguyên dữ liệu đã nén của
+ * các entry không bị chạm tới, nên mỗi mã đề chỉ còn phải nén hai tệp XML nhỏ.
  */
-export function buildModifiedDocxZip(
-  baseDocxEntries: { entryName: string; data: Buffer }[],
-  documentXml: string,
-  code: string
-): Buffer {
+export function prepareDocxTemplate(baseDocxEntries: { entryName: string; data: Buffer }[]): Buffer {
   const docxZip = new AdmZip();
 
   // 1. Modify word/_rels/document.xml.rels
@@ -396,7 +411,26 @@ export function buildModifiedDocxZip(
     }
   }
 
-  // 4. Synthesize word/footer1.xml
+  // Nén tại đây một lần duy nhất. word/document.xml và word/footer1.xml được thêm sau,
+  // theo từng mã đề, trong buildModifiedDocxZip().
+  return docxZip.toBuffer();
+}
+
+/**
+ * Gắn word/document.xml đã trộn và word/footer1.xml mang mã đề vào gói mẫu.
+ *
+ * `docxTemplate` là kết quả của prepareDocxTemplate() — gọi MỘT LẦN cho cả bộ đề rồi
+ * truyền lại vào đây cho từng mã. adm-zip giữ nguyên dữ liệu đã nén của những entry
+ * không bị chạm tới, nên ảnh không bị nén lại.
+ */
+export function buildModifiedDocxZip(
+  docxTemplate: Buffer,
+  documentXml: string,
+  code: string
+): Buffer {
+  const docxZip = new AdmZip(docxTemplate);
+
+  // Synthesize word/footer1.xml
   try {
     const footerDoc = new DOMParser().parseFromString(
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"></w:ftr>`,
@@ -411,7 +445,7 @@ export function buildModifiedDocxZip(
     console.error("Error synthesizing word/footer1.xml:", err);
   }
 
-  // 5. Add the modified word/document.xml
+  // Add the modified word/document.xml
   docxZip.addFile("word/document.xml", Buffer.from(documentXml, "utf-8"));
 
   return docxZip.toBuffer();

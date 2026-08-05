@@ -2,6 +2,7 @@ import express, { Request, Response, Router } from 'express';
 import { requireAdmin } from '../middlewares/require-admin.js';
 import { adminAuth, adminDb, adminInitError } from '../services/firebase-admin.js';
 import { isAdminEmail, userRoleCache } from '../services/auth.service.js';
+import { ASSIGNABLE_PACKAGES, type AssignablePackage } from '../config/roles.js';
 
 export const adminRouter = Router();
 
@@ -10,15 +11,12 @@ const jsonBody = express.json({ limit: '64kb' });
 /** Số bản ghi tối đa trả về một lần — tránh kéo nguyên collection về trình duyệt. */
 const USER_PAGE_LIMIT = 1000;
 
-const VALID_PACKAGES = ['6_months', '1_year', 'lifetime', 'pending'] as const;
-type Package = (typeof VALID_PACKAGES)[number];
-
 /**
  * Hạn dùng do MÁY CHỦ tính, không nhận từ client.
  * Trước đây trình duyệt tự tính expireAt rồi ghi thẳng vào Firestore — nghĩa là
  * thời hạn gói do phía client quyết định.
  */
-function expireAtFor(pkg: Package): string | null {
+function expireAtFor(pkg: AssignablePackage): string | null {
   const d = new Date();
   if (pkg === '6_months') {
     d.setMonth(d.getMonth() + 6);
@@ -93,10 +91,10 @@ adminRouter.post('/admin/users/:uid/role', requireAdmin, jsonBody, async (req: R
     res.status(400).json({ error: 'Thiếu định danh tài khoản.' });
     return;
   }
-  const pkg = req.body?.package as Package | undefined;
+  const pkg = req.body?.package as AssignablePackage | undefined;
 
-  if (!pkg || !VALID_PACKAGES.includes(pkg)) {
-    res.status(400).json({ error: `Gói không hợp lệ. Chỉ chấp nhận: ${VALID_PACKAGES.join(', ')}.` });
+  if (!pkg || !ASSIGNABLE_PACKAGES.includes(pkg)) {
+    res.status(400).json({ error: `Gói không hợp lệ. Chỉ chấp nhận: ${ASSIGNABLE_PACKAGES.join(', ')}.` });
     return;
   }
 
@@ -116,7 +114,7 @@ adminRouter.post('/admin/users/:uid/role', requireAdmin, jsonBody, async (req: R
 
     // Bấm lại đúng gói đang có = thu hồi (giữ nguyên hành vi cũ của giao diện).
     const revoking = current === pkg;
-    const target: Package = revoking ? 'pending' : pkg;
+    const target: AssignablePackage = revoking ? 'pending' : pkg;
 
     const update = target === 'pending'
       ? { status: 'pending', activatedAt: null, expireAt: null }
@@ -213,7 +211,22 @@ adminRouter.delete('/admin/users/:uid', requireAdmin, async (req: Request, res: 
       console.warn(`[Admin] ${uid} không còn trong Authentication — chỉ xoá document.`);
     }
 
-    await ref.delete();
+    // Từ đây trở đi tài khoản Authentication đã mất. Nếu bước xoá document thất bại thì
+    // hồ sơ trở thành mồ côi: vẫn hiện trong danh sách quản trị nhưng không còn tài khoản
+    // đăng nhập nào tương ứng. Phải báo đúng tình trạng nửa vời đó thay vì một lỗi 500
+    // chung chung khiến quản trị viên tưởng chưa có gì xảy ra.
+    try {
+      await ref.delete();
+    } catch (err: any) {
+      console.error(`[Admin] Đã xoá Authentication của ${uid} nhưng không xoá được document:`, err?.message || err);
+      userRoleCache.delete(uid);
+      res.status(500).json({
+        error: 'Đã xoá tài khoản đăng nhập nhưng chưa xoá được hồ sơ. ' +
+          'Hồ sơ này giờ không còn tài khoản đăng nhập nào — hãy bấm Xoá lại để dọn nốt.'
+      });
+      return;
+    }
+
     userRoleCache.delete(uid);
 
     res.json({ success: true });

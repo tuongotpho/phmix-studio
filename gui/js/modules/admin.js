@@ -6,6 +6,7 @@
 
 import { addLog, escapeHTML, showConfirmDialog, showAlertDialog, getAuthHeaders } from '../utils/ui-helpers.js';
 import { userRole } from './auth.js';
+import { isProStatus } from '../constants.js';
 
 // Module-level cache of all loaded users (used for client-side search/filter)
 let allUsersCache = [];
@@ -29,11 +30,10 @@ async function adminApi(path, options = {}) {
 function renderAdminStats(users) {
     const now = new Date();
     let pending = 0, pro = 0, expired = 0;
-    const proStatuses = ['pro', '6_months', '1_year', 'lifetime', 'active', 'approved'];
 
     users.forEach(u => {
         if (u.status === 'admin') return;
-        if (proStatuses.includes(u.status)) {
+        if (isProStatus(u.status)) {
             if (u.expireAt && new Date(u.expireAt) < now) {
                 expired++;
             } else {
@@ -58,7 +58,6 @@ function applyFiltersAndRender() {
     const keyword = (document.getElementById('admin-search')?.value || '').toLowerCase().trim();
     const statusFilter = document.getElementById('admin-filter-status')?.value || '';
     const now = new Date();
-    const proStatuses = ['pro', '6_months', '1_year', 'lifetime', 'active', 'approved'];
 
     let filtered = allUsersCache.filter(u => {
         if (keyword) {
@@ -68,10 +67,10 @@ function applyFiltersAndRender() {
         }
         if (statusFilter) {
             if (statusFilter === 'expired') {
-                return proStatuses.includes(u.status) && u.expireAt && new Date(u.expireAt) < now;
+                return isProStatus(u.status) && u.expireAt && new Date(u.expireAt) < now;
             }
             if (statusFilter === 'pending') {
-                return !proStatuses.includes(u.status) && u.status !== 'admin';
+                return !isProStatus(u.status) && u.status !== 'admin';
             }
             return u.status === statusFilter;
         }
@@ -119,7 +118,7 @@ function renderUserRows(users) {
         else if (data.status === 'pro' || data.status === 'active' || data.status === 'approved') { roleName = 'Bản PRO'; roleClass = 'pro'; }
         else if (data.status === 'admin') { roleName = 'Quản trị viên'; roleClass = 'admin'; }
 
-        const isActivatedRole = ['6_months', '1_year', 'lifetime', 'pro', 'active', 'approved'].includes(data.status);
+        const isActivatedRole = isProStatus(data.status);
 
         let expiryHtml = '';
         if (data.expireAt) {

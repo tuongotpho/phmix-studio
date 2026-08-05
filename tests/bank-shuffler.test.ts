@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import AdmZip from 'adm-zip';
-import { generateBankExamDocxFromXml } from '../bank-shuffler.js';
+import { generateBankExamDocxFromXml } from '../src/shuffler/bank.js';
 import { isAllowedMediaUrl, fetchMediaStrict } from '../src/services/media-fetch.js';
 
 const W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -68,7 +68,7 @@ describe('generateBankExamDocxFromXml', () => {
       { questionText: 'y', rawXmls: [rawPara('CAU_THU_BA')] }
     ];
 
-    const xml = docXmlOf(await generateBankExamDocxFromXml('Đề test', '', questions, [], [], 'base'));
+    const xml = docXmlOf(await generateBankExamDocxFromXml('Đề test', '', questions, [], []));
 
     assert.ok(xml.includes('CAU_HONG_KHONG_CO_XML'), 'câu hỏng phải có đoạn dự phòng');
     assert.ok(xml.includes('CAU_THU_HAI'), 'câu số 2 bị cắt mất');
@@ -82,7 +82,7 @@ describe('generateBankExamDocxFromXml', () => {
       mediaItems: [{ id: 'rId1', target: 'anh.png', url: 'http://10.0.0.5:8080/internal' }]
     }];
 
-    const buffer = await generateBankExamDocxFromXml('Đề test', '', questions, [], [], 'base');
+    const buffer = await generateBankExamDocxFromXml('Đề test', '', questions, [], []);
 
     assert.ok(docXmlOf(buffer).includes('CAU_CO_ANH'), 'câu hỏi vẫn phải được xuất');
     assert.ok(
@@ -100,7 +100,7 @@ describe('generateBankExamDocxFromXml', () => {
       mediaItems: [{ id: 'rId1', target: 'anh.png', base64: `data:image/png;base64,${png}` }]
     }];
 
-    const buffer = await generateBankExamDocxFromXml('Đề test', '', questions, [], [], 'base');
+    const buffer = await generateBankExamDocxFromXml('Đề test', '', questions, [], []);
     const zip = new AdmZip(buffer);
 
     assert.ok(relsOf(buffer).includes('rIdBank'), 'ảnh hợp lệ phải được đăng ký relationship');

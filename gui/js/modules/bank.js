@@ -12,6 +12,18 @@ export let bankSelectedIds = new Set();
 export let bankCurrentPage = 1;
 
 /**
+ * Trần số câu hỏi tải về mỗi lần mở Ngân hàng.
+ *
+ * 500 khớp với giới hạn câu hỏi mỗi lần lắp đề ở phía máy chủ (MAX_BANK_QUESTIONS trong
+ * src/routes/bank.routes.ts), nên không cắt mất thứ gì người dùng thực sự dùng được
+ * trong một lượt tạo đề.
+ */
+const BANK_FETCH_LIMIT = 500;
+
+/** true khi kho có nhiều hơn BANK_FETCH_LIMIT câu và danh sách đang bị cắt bớt. */
+let bankTruncated = false;
+
+/**
  * @param {{ skipQuestions?: boolean }} [options] skipQuestions = true khi đề được
  *   lắp ráp từ chính Ngân hàng: chỉ ghi metadata đề thi, không chèn lại câu hỏi.
  */
@@ -142,7 +154,7 @@ export async function loadQuestionBank() {
 
     container.innerHTML = '<div style="padding: 16px; text-align: center; font-size: 13px; opacity: 0.7;">Đang tải câu hỏi từ Ngân hàng...</div>';
 
-    const { collection, getDocs, query, where } = window.firebaseAPI;
+    const { collection, getDocs, query, where, limit } = window.firebaseAPI;
     const db = window.firebaseDb;
 
     try {
@@ -150,10 +162,18 @@ export async function loadQuestionBank() {
         let qRef = collection(db, "questions");
         let q;
 
+        // limit() bắt buộc, nhất là với kho cộng đồng: truy vấn không giới hạn kéo TOÀN BỘ
+        // câu hỏi công khai về trình duyệt, mà mỗi câu còn mang theo rawXmls (XML gốc của
+        // đoạn văn, vài KB đến vài chục KB). Ở vài nghìn câu là hàng chục MB mỗi lần mở
+        // tab, và Firestore tính tiền theo số document đọc ra — kể cả câu không ai xem.
+        //
+        // Cố ý KHÔNG phân trang phía máy chủ: bộ lọc và ô tìm kiếm bên dưới chạy trên toàn
+        // bộ những gì đã tải, nên phân trang server sẽ khiến tìm kiếm chỉ thấy trang hiện
+        // tại. Chặn trần rồi báo rõ khi bị cắt bớt là đánh đổi đúng ở quy mô hiện nay.
         if (scopeFilter === 'public') {
-            q = query(qRef, where("isPublic", "==", true));
+            q = query(qRef, where("isPublic", "==", true), limit(BANK_FETCH_LIMIT));
         } else {
-            q = query(qRef, where("ownerId", "==", currentUser.uid));
+            q = query(qRef, where("ownerId", "==", currentUser.uid), limit(BANK_FETCH_LIMIT));
         }
 
         const snapshot = await getDocs(q);
@@ -166,10 +186,19 @@ export async function loadQuestionBank() {
             bankQuestionsCache.push({ ...docSnap.data(), id: docSnap.id });
         });
 
+        bankTruncated = bankQuestionsCache.length >= BANK_FETCH_LIMIT;
+        if (bankTruncated) {
+            addLog(
+                `⚠️ Ngân hàng có nhiều hơn ${BANK_FETCH_LIMIT} câu — chỉ tải ${BANK_FETCH_LIMIT} câu đầu. ` +
+                'Hãy dùng bộ lọc Môn / Khối để thu hẹp phạm vi.',
+                'warning'
+            );
+        }
+
         renderQuestionBankList();
     } catch (e) {
         console.error("Error loading question bank:", e);
-        container.innerHTML = `<div style="padding: 16px; text-align: center; color: #dc2626;">Lỗi tải Ngân Hàng: ${e.message}</div>`;
+        container.innerHTML = `<div style="padding: 16px; text-align: center; color: #dc2626;">Lỗi tải Ngân Hàng: ${escapeHTML(e.message)}</div>`;
     }
 }
 
@@ -231,6 +260,16 @@ export function renderQuestionBankList(preservePage = false) {
     const paginated = filtered.slice(startIndex, startIndex + pageSize);
 
     container.innerHTML = '';
+
+    // Người dùng phải biết mình KHÔNG nhìn thấy toàn bộ kho, nếu không họ sẽ kết luận
+    // nhầm là câu hỏi đã mất.
+    if (bankTruncated) {
+        const banner = document.createElement('div');
+        banner.setAttribute('style', 'grid-column: 1 / -1; padding: 8px 12px; margin-bottom: 8px; font-size: 12px; background: #fef3c7; border: 1.5px solid #92400e; color: #92400e;');
+        banner.textContent = `⚠️ Kho có nhiều hơn ${BANK_FETCH_LIMIT} câu — đang hiển thị ${BANK_FETCH_LIMIT} câu đầu. Dùng bộ lọc Môn / Khối / Chương để thu hẹp phạm vi.`;
+        container.appendChild(banner);
+    }
+
     const { updateDoc, deleteDoc, doc } = window.firebaseAPI;
     const db = window.firebaseDb;
 
@@ -492,7 +531,7 @@ export async function loadSavedExams() {
             container.appendChild(item);
         });
     } catch (e) {
-        container.innerHTML = `<div style="padding: 16px; text-align: center; color: #dc2626;">Lỗi tải kho đề: ${e.message}</div>`;
+        container.innerHTML = `<div style="padding: 16px; text-align: center; color: #dc2626;">Lỗi tải kho đề: ${escapeHTML(e.message)}</div>`;
     }
 }
 

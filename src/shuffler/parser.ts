@@ -7,6 +7,16 @@ import {
   normalizeText
 } from './xml-utils.js';
 
+/**
+ * Đề có nhận ra được câu hỏi nào không.
+ *
+ * Trộn một đề rỗng không ném lỗi — nó lặng lẽ cho ra bộ zip toàn đề gốc chưa trộn. Vì
+ * thế mọi endpoint sinh đề phải kiểm tra hàm này và từ chối sớm thay vì trả tệp.
+ */
+export function examHasQuestions(examData: ExamData): boolean {
+  return [1, 2, 3].some(pid => (examData.parts[pid] || []).length > 0);
+}
+
 export function findChoiceStarts(p_elm: any): Record<string, number> {
   const starts: Record<string, number> = { A: -1, B: -1, C: -1, D: -1 };
   const children = Array.from(p_elm.childNodes);
@@ -363,6 +373,26 @@ export function parseExam(xmlText: string, overrides: Record<string, any> = {}):
   }
 
   const warnings: string[] = [];
+
+  // Không nhận ra câu nào — gần như luôn là do thiếu dòng tiêu đề "PHẦN I/II/III".
+  //
+  // Parser chỉ bắt đầu gom câu hỏi SAU khi gặp một đoạn khớp /PHẦN\s+(I|II|III)\b/.
+  // Đề ghi "Phần 1" bằng số Ả Rập, ghi "PHẦN A", hay quên hẳn dòng đó sẽ đẩy toàn bộ nội
+  // dung vào header_elements và cả ba phần đều rỗng. Khi ấy khâu trộn chạy trên tập rỗng
+  // và trả về một bộ zip đầy đủ tên tệp nhưng MỌI đề bên trong đều là bản gốc chưa trộn —
+  // hoàn toàn im lặng. Giáo viên chỉ phát hiện lúc đã phát đề cho học sinh.
+  //
+  // Bên gọi dùng examHasQuestions() để chặn sớm; cảnh báo này để /api/validate hiển thị.
+  if (blocks.length > 0 && parts[1].length === 0 && parts[2].length === 0 && parts[3].length === 0) {
+    warnings.push(
+      !first_part_seen
+        ? 'Không tìm thấy dòng tiêu đề phần nào trong đề. Đề phải có dòng ghi rõ "PHẦN I", ' +
+          '"PHẦN II" hoặc "PHẦN III" (số La Mã) thì hệ thống mới nhận ra được câu hỏi. ' +
+          'Các cách ghi như "Phần 1" hay "PHẦN A" đều không được nhận.'
+        : 'Có tiêu đề phần nhưng không nhận ra câu hỏi nào. Mỗi câu phải bắt đầu bằng ' +
+          '"Câu <số>." (ví dụ: "Câu 1." hoặc "Câu 1:").'
+    );
+  }
 
   [1, 2, 3].forEach(pid => {
     parts[pid].forEach(q => {

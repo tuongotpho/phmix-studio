@@ -1,7 +1,7 @@
 import express, { Router } from 'express';
 import { notifyLimiter } from '../middlewares/limiters.js';
 import { attachVerifiedUser } from '../middlewares/auth.js';
-import { notifyAdminOfNewUser } from '../../notifier.js';
+import { notifyAdminOfNewUser } from '../services/notifier.js';
 
 export const authRouter = Router();
 

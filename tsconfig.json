@@ -9,5 +9,5 @@
     "skipLibCheck": true,
     "outDir": "./dist"
   },
-  "include": ["server.ts", "shuffler.ts", "notifier.ts", "bank-shuffler.ts", "auth.ts", "export.ts", "emptyTemplate.ts", "src/**/*"]
+  "include": ["server.ts", "src/**/*"]
 }

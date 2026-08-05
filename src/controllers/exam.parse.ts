@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import AdmZip from 'adm-zip';
 import { DOMParser, XMLSerializer } from '@xmldom/xmldom';
-import { parseExam, getNodeTextWithMediaAndMath, getElementsByTagNameLocal } from '../../shuffler.js';
+import { parseExam, getNodeTextWithMediaAndMath, getElementsByTagNameLocal } from '../shuffler/index.js';
 import { checkArchiveLimits } from '../services/docx-archive.js';
 
 // POST endpoint for validating exam structure and finding unanswered questions

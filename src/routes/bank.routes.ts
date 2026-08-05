@@ -1,15 +1,13 @@
 import express, { Router } from 'express';
 import AdmZip from 'adm-zip';
-import QRCode from 'qrcode';
 import { shuffleLimiter } from '../middlewares/limiters.js';
 import { attachVerifiedUser } from '../middlewares/auth.js';
 import { getUserRole } from '../services/auth.service.js';
-import { exportTnmakerExcel, generateKeyTableDoc, buildModifiedDocxZip, generateTnmakerAnswersAndQr } from '../services/export.service.js';
-import { parseExam, shuffleExamData, exportShuffledXml } from '../../shuffler.js';
-import { generateBankExamDocxFromXml } from '../../bank-shuffler.js';
+import { parseExam, examHasQuestions } from '../shuffler/index.js';
+import { generateBankExamDocxFromXml } from '../shuffler/bank.js';
 import { DEFAULT_PROJECT_ID, DEFAULT_DATABASE_ID } from '../config/env.js';
 import { MAX_CODES_PER_REQUEST } from '../config/limits.js';
-import { buildShuffleNote, SHUFFLE_NOTE_FILENAME } from '../services/shuffle-notes.js';
+import { buildShuffledExamZip, extractBaseDocxEntries } from '../services/shuffle-pipeline.js';
 
 export const bankRouter = Router();
 
@@ -23,23 +21,57 @@ export const bankRouter = Router();
  */
 const BANK_JSON_LIMIT = '20mb';
 
+const MAX_BANK_QUESTIONS = 500;
+const MAX_QUESTION_BYTES = 200_000;
+
+/**
+ * Kiểm tra danh sách câu hỏi gửi lên. Trả về thông báo lỗi (hiển thị được cho người
+ * dùng) hoặc null nếu hợp lệ.
+ *
+ * Dùng chung cho cả /shuffle-bank lẫn /generate-base-docx — trước đây mỗi route chép
+ * một bản y hệt, nên sửa hạn mức ở một chỗ là lệch ngay với chỗ kia.
+ */
+function validateBankQuestions(questions: unknown): string | null {
+  if (!Array.isArray(questions) || questions.length === 0) {
+    return 'Danh sách câu hỏi chọn rỗng!';
+  }
+  if (questions.length > MAX_BANK_QUESTIONS) {
+    return `Vượt quá giới hạn câu hỏi (tối đa ${MAX_BANK_QUESTIONS} câu).`;
+  }
+  for (const q of questions) {
+    if (JSON.stringify(q).length > MAX_QUESTION_BYTES) {
+      return 'Một số câu hỏi có kích thước quá lớn.';
+    }
+  }
+  return null;
+}
+
+/**
+ * Xếp câu hỏi vào ba phần theo `type`.
+ *
+ * Danh sách bí danh dài vì dữ liệu trong ngân hàng đến từ nhiều đợt: câu nhập bằng
+ * /api/parse-docx dùng 'choice' / 'true_false' / 'short_answer', còn câu soạn tay trên
+ * giao diện từng lưu 'mcq', 'tf', 'fill'... Câu thiếu hẳn `type` được coi là trắc
+ * nghiệm nhiều phương án.
+ */
+function splitQuestionsByPart(questions: any[]) {
+  return {
+    p1: questions.filter(q => (q.type || 'choice') === 'choice' || q.type === 'mcq'),
+    p2: questions.filter(q => q.type === 'true_false' || q.type === 'tf' || q.type === 'tf_statement'),
+    p3: questions.filter(
+      q => q.type === 'short_answer' || q.type === 'short' || q.type === 'essay' || q.type === 'fill'
+    )
+  };
+}
+
 bankRouter.post('/shuffle-bank', attachVerifiedUser, shuffleLimiter, express.json({ limit: BANK_JSON_LIMIT }), async (req, res) => {
   try {
     const { title = 'Đề thi lắp ráp', num_codes = 4, code_start = 101, questions = [], shuffle_questions = true, shuffle_choices = true, shuffle_statements = true } = req.body;
 
-    if (!Array.isArray(questions) || questions.length === 0) {
-      res.status(400).json({ error: 'Danh sách câu hỏi chọn rỗng!' });
+    const invalid = validateBankQuestions(questions);
+    if (invalid) {
+      res.status(400).json({ error: invalid });
       return;
-    }
-    if (questions.length > 500) {
-      res.status(400).json({ error: 'Vượt quá giới hạn câu hỏi (tối đa 500 câu).' });
-      return;
-    }
-    for (const q of questions) {
-      if (JSON.stringify(q).length > 200000) {
-        res.status(400).json({ error: 'Một số câu hỏi có kích thước quá lớn.' });
-        return;
-      }
     }
 
     const numCodes = parseInt(String(num_codes), 10);
@@ -74,106 +106,54 @@ bankRouter.post('/shuffle-bank', attachVerifiedUser, shuffleLimiter, express.jso
       codes.push(codeStart + i);
     }
 
-    const p1 = questions.filter(q => (q.type || 'choice') === 'choice' || q.type === 'mcq');
-    const p2 = questions.filter(q => q.type === 'true_false' || q.type === 'tf' || q.type === 'tf_statement');
-    const p3 = questions.filter(q => q.type === 'short_answer' || q.type === 'short' || q.type === 'essay' || q.type === 'fill');
+    const { p1, p2, p3 } = splitQuestionsByPart(questions);
 
-    // 1. Generate the base docx
-    const baseDocxBuffer = await generateBankExamDocxFromXml(title, "", p1, p2, p3, 'base');
+    // 1. Dựng đề gốc và đặt luôn vào zip kết quả để giáo viên đối chiếu.
+    const baseDocxBuffer = await generateBankExamDocxFromXml(title, '', p1, p2, p3);
 
     const resultZip = new AdmZip();
     resultZip.addFile('De_Goc_Truoc_Khi_Tron.docx', baseDocxBuffer);
 
-    // 2. Parse the base docx to prepare for shuffling
+    // 2. Bóc đề gốc ra để chuẩn bị trộn.
     const docxZip = new AdmZip(baseDocxBuffer);
-    const documentXmlEntry = docxZip.getEntry("word/document.xml");
+    const documentXmlEntry = docxZip.getEntry('word/document.xml');
     if (!documentXmlEntry) {
-      throw new Error("Không thể tìm thấy word/document.xml trong đề gốc.");
+      throw new Error('Không thể tìm thấy word/document.xml trong đề gốc.');
     }
-    const documentXmlText = documentXmlEntry.getData().toString("utf-8");
-
-    const baseDocxEntries: { entryName: string; data: Buffer }[] = [];
-    for (const entry of docxZip.getEntries()) {
-      if (entry.entryName !== 'word/document.xml' && !entry.isDirectory) {
-        baseDocxEntries.push({
-          entryName: entry.entryName,
-          data: entry.getData()
-        });
-      }
-    }
+    const documentXmlText = documentXmlEntry.getData().toString('utf-8');
+    const baseDocxEntries = extractBaseDocxEntries(docxZip);
 
     const examData = parseExam(documentXmlText, {});
-    // Truyền chuỗi XML, không parse sẵn thành DOM — xem giải thích ở exam.shuffle.ts.
 
-    const hasFooterFiles = baseDocxEntries.some(entry =>
-      entry.entryName.startsWith('word/footer') && entry.entryName.endsWith('.xml')
-    );
-
-    const all_keys: Record<number, any> = {};
-
-    // 3. Shuffle and generate versions
-    for (const code of codes) {
-      await new Promise(resolve => setImmediate(resolve));
-
-      const { shuffled_parts, key_map } = shuffleExamData(
-        examData.parts,
-        code,
-        null, // part3_code
-        shuffle_questions !== false,
-        shuffle_choices !== false,
-        shuffle_statements !== false
-      );
-      all_keys[code] = key_map;
-
-      // Student version
-      const studentXml = exportShuffledXml(
-        shuffled_parts,
-        examData.header_elements,
-        examData.footer_elements,
-        examData.part_headers,
-        documentXmlText,
-        false,
-        String(code),
-        hasFooterFiles
-      );
-      const studentDocxBuffer = buildModifiedDocxZip(baseDocxEntries, studentXml, String(code));
-      resultZip.addFile(`De_HocSinh_${code}.docx`, studentDocxBuffer);
-
-      // Teacher version
-      const teacherXml = exportShuffledXml(
-        shuffled_parts,
-        examData.header_elements,
-        examData.footer_elements,
-        examData.part_headers,
-        documentXmlText,
-        true,
-        String(code),
-        hasFooterFiles
-      );
-      const teacherDocxBuffer = buildModifiedDocxZip(baseDocxEntries, teacherXml, String(code));
-      resultZip.addFile(`De_GiaoVien_${code}_CoDapAn.docx`, teacherDocxBuffer);
+    // Đề gốc ở đây do chính máy chủ dựng nên hiếm khi rỗng, nhưng nếu rỗng thì phải báo
+    // lỗi thay vì trả về bộ zip toàn đề chưa trộn.
+    if (!examHasQuestions(examData)) {
+      res.status(500).json({
+        error: 'Không dựng được đề gốc từ các câu hỏi đã chọn. Bộ đề chưa được tạo.',
+        warnings: examData.warnings
+      });
+      return;
     }
 
-    // 4. Generate keys and excel
-    const keyTableDocBuffer = await generateKeyTableDoc(all_keys);
-    resultZip.addFile("Bang_Dap_An_Tong_Hop.docx", keyTableDocBuffer);
-
-    const excelBuffer = exportTnmakerExcel(all_keys);
-    resultZip.addFile("Dap_An_TNMaker.xlsx", excelBuffer);
-
-    await generateTnmakerAnswersAndQr(all_keys, resultZip);
-    // Đề gốc ở đây do chính máy chủ dựng nên hiếm khi hỏng cấu trúc, nhưng nếu có thì
-    // giáo viên cũng phải biết — xem src/services/shuffle-notes.ts.
-    const shuffleNote = buildShuffleNote(examData);
-    if (shuffleNote) {
-      resultZip.addFile(SHUFFLE_NOTE_FILENAME, Buffer.from('﻿' + shuffleNote, 'utf-8'));
-    }
+    // 3. Trộn và đóng gói — dùng chung khâu với /api/shuffle.
+    await buildShuffledExamZip({
+      examData,
+      documentXmlText,
+      baseDocxEntries,
+      codes,
+      flags: {
+        shuffleQuestions: shuffle_questions !== false,
+        shuffleChoices: shuffle_choices !== false,
+        shuffleStatements: shuffle_statements !== false
+      },
+      resultZip
+    });
 
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', 'attachment; filename="Bo_De_Tron_Tu_Ngan_Hang.zip"');
     res.send(resultZip.toBuffer());
   } catch (error: any) {
-    console.error("Error shuffling bank questions:", error);
+    console.error('Error shuffling bank questions:', error);
     res.status(500).json({ error: 'Lỗi trộn đề: ' + error.message });
   }
 });
@@ -182,39 +162,20 @@ bankRouter.post('/generate-base-docx', attachVerifiedUser, shuffleLimiter, expre
   try {
     const { title = 'Đề thi gốc', questions = [] } = req.body;
 
-    if (!Array.isArray(questions) || questions.length === 0) {
-      res.status(400).json({ error: 'Danh sách câu hỏi chọn rỗng!' });
+    const invalid = validateBankQuestions(questions);
+    if (invalid) {
+      res.status(400).json({ error: invalid });
       return;
     }
-    if (questions.length > 500) {
-      res.status(400).json({ error: 'Vượt quá giới hạn câu hỏi (tối đa 500 câu).' });
-      return;
-    }
-    for (const q of questions) {
-      if (JSON.stringify(q).length > 200000) {
-        res.status(400).json({ error: 'Một số câu hỏi có kích thước quá lớn.' });
-        return;
-      }
-    }
 
-    const p1 = questions.filter(q => (q.type || 'choice') === 'choice' || q.type === 'mcq');
-    const p2 = questions.filter(q => q.type === 'true_false' || q.type === 'tf' || q.type === 'tf_statement');
-    const p3 = questions.filter(q => q.type === 'short_answer' || q.type === 'short' || q.type === 'essay' || q.type === 'fill');
-
-    const baseDocxBuffer = await generateBankExamDocxFromXml(
-      title,
-      "",
-      p1,
-      p2,
-      p3,
-      'base'
-    );
+    const { p1, p2, p3 } = splitQuestionsByPart(questions);
+    const baseDocxBuffer = await generateBankExamDocxFromXml(title, '', p1, p2, p3);
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename="De_Goc_Luu_Tru.docx"`);
     res.send(baseDocxBuffer);
   } catch (error: any) {
-    console.error("Error generating base docx:", error);
-    res.status(500).json({ error: "Lỗi tạo file đề gốc: " + error.message });
+    console.error('Error generating base docx:', error);
+    res.status(500).json({ error: 'Lỗi tạo file đề gốc: ' + error.message });
   }
 });

@@ -109,6 +109,13 @@ app.use('/api', bankRouter);
 app.use('/api', authRouter);
 app.use('/api', adminRouter);
 
+// 404 cho /api/*: phải trả JSON.
+// Không có handler này thì Express rơi về trang 404 mặc định dạng HTML, và phía client
+// `await res.json()` ném SyntaxError khó hiểu thay vì hiện thông báo đúng nguyên nhân.
+app.use('/api', (_req, res) => {
+  res.status(404).json({ error: 'Không tìm thấy endpoint này trên máy chủ.' });
+});
+
 // Global Error Handler Middleware
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   if (err instanceof multer.MulterError) {

@@ -54,6 +54,52 @@ export function adminInitError(): string | null {
   return initError;
 }
 
+let credentialUsable: boolean | null = null;
+let credentialProbe: Promise<boolean> | null = null;
+
+/**
+ * Credential có thật sự dùng được không — kiểm tra MỘT lần rồi nhớ kết quả.
+ *
+ * Vì sao không thể chỉ dựa vào `adminDb() !== null`: initializeApp() KHÔNG xác thực
+ * credential, nó chỉ dựng đối tượng. getFirestore() cũng vậy. Lỗi "không tìm thấy
+ * Application Default Credentials" chỉ nổ ra ở lần gọi thật đầu tiên, và nổ ở tầng
+ * gRPC của google-gax dưới dạng unhandled rejection — try/catch quanh lời gọi
+ * `await db.runTransaction(...)` KHÔNG bắt được, nên nó làm chết cả tiến trình.
+ *
+ * Đã có sự cố thật: khi chạy local không có credential, request đầu tiên đi qua
+ * rate limiter là server sập ngay. Vì thế mọi nơi dùng Firestore cho việc phụ trợ
+ * (đếm lượt truy cập, khoá trộn đề) phải hỏi hàm này TRƯỚC, và tự chuyển sang phương
+ * án dự phòng khi nó trả false.
+ *
+ * getAccessToken() chỉ gọi HTTP tới metadata server / đọc key file, không đụng gRPC,
+ * nên thất bại ở đây là một promise rejection bình thường và bắt được.
+ */
+export function adminCredentialsUsable(): Promise<boolean> {
+  if (credentialUsable !== null) return Promise.resolve(credentialUsable);
+
+  if (!credentialProbe) {
+    credentialProbe = (async () => {
+      const a = ensureApp();
+      if (!a) return false;
+      try {
+        await (a.options.credential as any)?.getAccessToken();
+        return true;
+      } catch (err: any) {
+        console.warn(
+          `[FirebaseAdmin] Không lấy được Application Default Credentials (${err?.message || err}). ` +
+          'Các tính năng dựa trên Firestore sẽ chạy ở chế độ dự phòng trong bộ nhớ.'
+        );
+        return false;
+      }
+    })().then(ok => {
+      credentialUsable = ok;
+      return ok;
+    });
+  }
+
+  return credentialProbe;
+}
+
 /**
  * Cấp custom claim `admin` cho tài khoản ADMIN_EMAIL nếu chưa có.
  *

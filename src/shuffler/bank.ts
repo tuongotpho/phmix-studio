@@ -1,9 +1,9 @@
 import AdmZip from 'adm-zip';
 import { DOMParser, XMLSerializer } from '@xmldom/xmldom';
-import { emptyTemplateBase64 } from './emptyTemplate.js';
-import { fetchMediaStrict } from './src/services/media-fetch.js';
-import { findChoiceStarts } from './src/shuffler/parser.js';
-import { isSeparatorElement } from './src/shuffler/xml-utils.js';
+import { emptyTemplateBase64 } from './empty-template.js';
+import { fetchMediaStrict } from '../services/media-fetch.js';
+import { findChoiceStarts } from './parser.js';
+import { isSeparatorElement } from './xml-utils.js';
 import {
   getUsableWidthTwips,
   separatorHasBreak,
@@ -11,10 +11,24 @@ import {
   columnsFromBreaks,
   applyEvenTabStops,
   createSeparatorRun
-} from './src/shuffler/tab-layout.js';
+} from './tab-layout.js';
 
 /** Trần số ảnh tải từ xa cho mỗi lần tạo đề — chặn khuếch đại (500 câu × nhiều ảnh). */
 const MAX_REMOTE_MEDIA = 100;
+
+/**
+ * Trần TỔNG dung lượng ảnh cho mỗi lần tạo đề.
+ *
+ * Chỉ đếm số ảnh là không đủ: MAX_REMOTE_MEDIA (100) nhân với MAX_MEDIA_BYTES của
+ * media-fetch (8MB mỗi ảnh) cho trần lý thuyết 800MB, trong khi instance App Hosting
+ * chỉ có 1GB (apphosting.yaml). Các buffer này KHÔNG được giải phóng dần — chúng nằm
+ * lại trong `zip` cho tới lúc toBuffer(). Hai giới hạn kia được đặt ở hai file khác
+ * nhau nên chưa ai nhân chúng với nhau; đây là chỗ chốt lại.
+ *
+ * 64MB khớp với trần giải nén của docx-archive.ts: một đề .docx hợp lệ nở ra tối đa
+ * chừng đó, nên đề lắp từ ngân hàng cũng không có lý do vượt qua.
+ */
+const MAX_TOTAL_MEDIA_BYTES = 64 * 1024 * 1024;
 
 /**
  * Căn thẳng hàng A/B/C/D cho đoạn phương án lấy từ rawXmls của Ngân hàng, GIỮ NGUYÊN
@@ -75,13 +89,24 @@ function normalizeChoiceParagraph(p_elm: any, doc: any, usableWidth: number): vo
   }
 }
 
+/**
+ * Dựng đề gốc (.docx) từ các câu hỏi trong ngân hàng.
+ *
+ * Trước đây hàm nhận thêm tham số `mode: 'student' | 'teacher' | 'base'`, nhưng cả hai
+ * nơi gọi đều truyền 'base' — hai nhánh còn lại chưa từng chạy. Nhánh 'teacher' lại
+ * mang sẵn một lỗi: nó đọc `q.correctAnswers[k].isCorrect`, trong khi correctAnswers do
+ * exam.parse.ts sinh ra là Record<string, boolean>, nên `.isCorrect` luôn undefined và
+ * MỌI mệnh đề sẽ được in là "S". Bỏ hẳn tham số thay vì để lại cái bẫy đó.
+ *
+ * Việc tách bản học sinh / bản giáo viên đã do exportShuffledXml đảm nhiệm ở khâu trộn
+ * (xem src/services/shuffle-pipeline.ts), nên đây chỉ cần dựng đúng đề gốc.
+ */
 export async function generateBankExamDocxFromXml(
   title: string,
   code: string,
   p1Questions: any[],
   p2Questions: any[],
-  p3Questions: any[],
-  mode: 'student' | 'teacher' | 'base'
+  p3Questions: any[]
 ): Promise<Buffer> {
   const zip = new AdmZip(Buffer.from(emptyTemplateBase64, 'base64'));
   const docXmlEntry = zip.getEntry('word/document.xml');
@@ -99,6 +124,7 @@ export async function generateBankExamDocxFromXml(
   
   let relIdCounter = 1000;
   let remoteFetches = 0;
+  let mediaBytesTotal = 0;
   const usableWidth = getUsableWidthTwips(docXml);
 
   function appendHeader(text: string, isBold: boolean = true) {
@@ -144,10 +170,7 @@ export async function generateBankExamDocxFromXml(
 
   appendHeader(title.toUpperCase());
   appendHeader(`MÃ ĐỀ THI: ${code}`);
-  if (mode === 'teacher') {
-    appendHeader("(BẢN GIÁO VIÊN - CÓ ĐÁP ÁN VÀ ĐÁP SỐ CHÍNH XÁC)", false);
-  }
-  
+
   const emptyP = docXml.createElement('w:p');
   body.appendChild(emptyP);
 
@@ -186,7 +209,11 @@ export async function generateBankExamDocxFromXml(
 
            let data: Buffer | null = null;
            try {
-             if (media.base64) {
+             if (mediaBytesTotal >= MAX_TOTAL_MEDIA_BYTES) {
+               console.warn(
+                 `[BankShuffler] Bỏ qua ảnh: đã đạt trần tổng dung lượng ${MAX_TOTAL_MEDIA_BYTES} byte.`
+               );
+             } else if (media.base64) {
                const base64Data = media.base64.split(',').pop() || media.base64;
                data = Buffer.from(base64Data, 'base64');
              } else if (media.url) {
@@ -205,6 +232,11 @@ export async function generateBankExamDocxFromXml(
            // Không đăng ký relationship khi thiếu dữ liệu: một Relationship trỏ tới file
            // không tồn tại làm Word báo tài liệu hỏng.
            if (!data) continue;
+
+           // Cộng dồn SAU khi có dữ liệu thật: ảnh cuối cùng được phép vượt trần một
+           // chút (tối đa 8MB của fetchMediaStrict), đổi lại phép đếm không phụ thuộc
+           // vào Content-Length do bên ngoài khai.
+           mediaBytesTotal += data.length;
 
            zip.addFile(`word/${newTarget}`, data);
            oldToNewRelId[media.id] = newRelId;
@@ -262,18 +294,7 @@ export async function generateBankExamDocxFromXml(
           for (const child of children) replaceQuestionNum(child);
         };
         replaceQuestionNum(el);
-        
-        if (mode === 'student') {
-          const uTags = Array.from(el.getElementsByTagName('w:u'));
-          uTags.forEach((u: any) => {
-             if (u && u.parentNode) u.parentNode.removeChild(u);
-          });
-          const colors = Array.from(el.getElementsByTagName('w:color'));
-          colors.forEach((c: any) => {
-             if (c && c.parentNode) c.parentNode.removeChild(c);
-          });
-        }
-        
+
         // Use cloneNode since xmldom cloneNode works across documents sometimes, or just importNode
         let importedNode;
         if (typeof docXml.importNode === 'function') {
@@ -287,29 +308,6 @@ export async function generateBankExamDocxFromXml(
 
         body.appendChild(importedNode);
       });
-
-      if (mode === 'teacher') {
-         const p = docXml.createElement('w:p');
-         const r = docXml.createElement('w:r');
-         const rPr = docXml.createElement('w:rPr');
-         const color = docXml.createElement('w:color');
-         color.setAttribute('w:val', '008000');
-         const b = docXml.createElement('w:b');
-         rPr.appendChild(b);
-         rPr.appendChild(color);
-         r.appendChild(rPr);
-         const t = docXml.createElement('w:t');
-         let ansStr = '';
-         if (q.part === 1) ansStr = q.correctLetter || q.correctAnswer || '';
-         if (q.part === 2) {
-            ansStr = Object.keys(q.correctAnswers || {}).map(k => `${k}: ${q.correctAnswers[k].isCorrect ? 'Đ' : 'S'}`).join(', ');
-         }
-         if (q.part === 3) ansStr = q.correctAnswer || '';
-         t.textContent = `[Đáp án]: ${ansStr}`;
-         r.appendChild(t);
-         p.appendChild(r);
-         body.appendChild(p);
-      }
     }
   };
 

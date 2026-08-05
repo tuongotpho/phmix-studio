@@ -1,4 +1,5 @@
 import { jwtVerify, createRemoteJWKSet } from 'jose';
+import { isProStatus } from '../config/roles.js';
 
 /**
  * Bounded LRU Cache implementation with TTL to prevent Out-Of-Memory memory leaks
@@ -63,11 +64,22 @@ interface CachedUserRole {
   userEmail?: string;
 }
 
-// Bounded LRU cache for user roles (max 5,000 entries, 5 minutes TTL)
-export const userRoleCache = new LRUCache<string, CachedUserRole>(5000, 5 * 60 * 1000);
+/**
+ * Cache vai trò người dùng (tối đa 5.000 mục).
+ *
+ * TTL 60 giây, KHÔNG phải 5 phút. Cache này nằm trong RAM của từng instance, mà
+ * apphosting.yaml đặt maxInstances: 10 — nên userRoleCache.delete() trong
+ * admin.routes.ts chỉ dọn được instance vừa phục vụ thao tác quản trị đó. Chín instance
+ * còn lại vẫn cấp quyền theo giá trị cũ cho tới khi hết TTL. Với 5 phút, việc thu hồi
+ * một tài khoản vi phạm gần như không có hiệu lực tức thì như ghi chú ở đó khẳng định.
+ *
+ * 60 giây là mức đánh đổi: mỗi người dùng đang thao tác phát sinh thêm khoảng một lần
+ * đọc Firestore mỗi phút — không đáng kể so với một request trộn đề tốn 25 giây CPU.
+ * Muốn bỏ hẳn độ trễ thì phải chuyển vai trò PRO sang custom claim như quyền admin,
+ * khi đó thông tin nằm trong chính token và không cần cache.
+ */
+export const userRoleCache = new LRUCache<string, CachedUserRole>(5000, 60 * 1000);
 
-// Bounded LRU cache for last code start per user / IP (30 minutes TTL)
-export const userLastCodeStartCache = new LRUCache<string, number>(2000, 30 * 60 * 1000);
 
 // Endpoint JWKS chính thức cho Firebase ID token. Đường dẫn phải đúng tuyệt đối:
 // createRemoteJWKSet nạp key lazy nên URL sai không làm sập lúc khởi động, mà khiến
@@ -237,10 +249,30 @@ export async function getUserRole(
     }
 
     if (!response || !response.ok) {
-      console.warn(`Firestore REST API status for ${effectiveUid}: ${response?.status || 'No response'}`);
       if (isAdminEmail(userEmail)) {
         userRoleCache.set(effectiveUid, { role: 'admin', userEmail });
         return 'admin';
+      }
+
+      // Phân biệt "chưa có hồ sơ" với "hệ thống đang hỏng".
+      //
+      // 404 là chuyện bình thường: tài khoản vừa đăng ký, document users/{uid} chưa
+      // được tạo — 'basic' là câu trả lời ĐÚNG, không cần ồn ào.
+      //
+      // Còn 5xx hoặc mất mạng thì ta KHÔNG biết người này có quyền gì, và việc trả
+      // 'basic' âm thầm hạ một tài khoản PRO đang trả tiền xuống bản dùng thử 2 mã đề.
+      // Phải log ở mức error để còn lần ra được khi có người báo "tự nhiên mất PRO".
+      // Cố ý không ghi vào cache ở nhánh này: hạ cấp nhầm mà còn nhớ suốt TTL thì tệ
+      // hơn nhiều so với việc hỏi lại Firestore ở request kế tiếp.
+      const status = response?.status;
+      if (status === 404) {
+        console.warn(`[Auth] Chưa có hồ sơ users/${effectiveUid} — xếp vào 'basic'.`);
+      } else {
+        console.error(
+          `[Auth] Không đọc được vai trò của ${effectiveUid} (${status ?? 'không có phản hồi'}). ` +
+          'Tài khoản này tạm bị hạ xuống "basic"; nếu người dùng có gói PRO thì đây là hạ cấp NHẦM ' +
+          'do lỗi hạ tầng, không phải do hết hạn. Kiểm tra kết nối Firestore.'
+        );
       }
       return 'basic';
     }
@@ -267,7 +299,7 @@ export async function getUserRole(
         }
       }
 
-      if (!expired && (status === 'pro' || status === 'approved' || status === '6_months' || status === '1_year' || status === 'lifetime' || status === 'active')) {
+      if (!expired && isProStatus(status)) {
         role = 'pro';
       }
     }

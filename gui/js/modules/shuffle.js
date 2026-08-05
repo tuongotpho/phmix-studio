@@ -13,7 +13,6 @@ export let isValidating = false;
 export let cachedWarnings = [];
 export let cachedUnansweredList = [];
 export let parsedQuestionsCache = [];
-export let lastUsedCodeStart = null;
 
 /**
  * Đề đang trộn được lắp ráp từ Ngân hàng (tab Lắp ráp) chứ không phải file người
@@ -184,22 +183,10 @@ export async function executeShuffle() {
     let numCodes = parseInt(numCodesInput.value) || 4;
     let codeStart = parseInt(codeStartInput.value) || 101;
 
-    if (numCodes > 48) {
-        if (lastUsedCodeStart !== null) {
-            if (codeStart === lastUsedCodeStart) {
-                addLog('Lỗi: Khi trộn trên 48 mã đề, mã đề bắt đầu không được trùng với lần tạo trước (lần 1)! Vui lòng đổi sang mã bắt đầu khác.', 'error');
-                updateProgress(0, 'Yêu cầu đổi mã đề');
-                return;
-            }
-            const currentPrefix = String(codeStart).charAt(0);
-            const lastPrefix = String(lastUsedCodeStart).charAt(0);
-            if (currentPrefix === lastPrefix) {
-                addLog(`Lỗi: Khi trộn trên 48 mã đề, mã đề bắt đầu phải chuyển sang đầu số khác (ký tự bắt đầu khác) so với lần 1 (${lastUsedCodeStart})!`, 'error');
-                updateProgress(0, 'Yêu cầu đổi mã đề đầu số khác');
-                return;
-            }
-        }
-    }
+    // Quy tắc "trên 48 mã đề phải đổi đầu số" đã được bỏ ở cả hai phía: trần thật là 24
+    // mã đề mỗi lần (src/config/limits.ts), nên nhánh này không bao giờ chạy tới. Việc
+    // tránh trùng lặp giữa các lần trộn nay do mã tái tạo (seed) đảm nhiệm — bỏ trống ô
+    // đó thì mỗi lần trộn tự sinh một bộ đề khác.
 
     if (!isActivated) {
         numCodes = 2;
@@ -244,6 +231,10 @@ export async function executeShuffle() {
         formData.append('shuffle_choices', shuffleC ? 'on' : 'off');
         formData.append('shuffle_statements', shuffleS ? 'on' : 'off');
         formData.append('answer_overrides', JSON.stringify(answerOverrides));
+        // Bỏ trống = mỗi lần trộn ra một bộ đề khác (mặc định). Điền lại mã lấy từ
+        // THONG_TIN_BO_DE.txt của lần trước để dựng đúng bộ đề cũ.
+        const seedValue = (document.getElementById('shuffle-seed')?.value || '').trim();
+        if (seedValue) formData.append('seed', seedValue);
 
         // X-User-Uid đã bị loại bỏ: backend lấy UID từ chữ ký token, không tin header.
         const headers = await getAuthHeaders();
@@ -264,8 +255,6 @@ export async function executeShuffle() {
         addLog('Trộn đề hoàn tất! Đang tạo mã QR Code TNMaker tổng hợp...', 'info');
         addLog('Đang tải file zip kết quả...', 'success');
         updateProgress(100, 'Hoàn thành!');
-
-        lastUsedCodeStart = codeStart;
 
         await saveParsedQuestionsToBankAndExamMeta(selectedWebFile, numCodes, codeStart, {
             skipQuestions: isFromBuilder

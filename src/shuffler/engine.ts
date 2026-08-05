@@ -57,6 +57,18 @@ function appendSeparator(
   p_elm.appendChild(createSeparatorRun(doc, posIndex, breakAfter));
 }
 
+/**
+ * `seed` quyết định kết quả trộn; `code` tách các mã đề khác nhau ra khỏi nhau.
+ *
+ * Truyền null nghĩa là "tự bốc số ngẫu nhiên", và khi đó KHÔNG có cách nào dựng lại bộ
+ * đề đã tạo. Trước đây cả hai nơi gọi trong production đều truyền null, mà hàm này lại
+ * được gọi RIÊNG cho từng mã đề — nên mỗi mã tự bốc một số nền khác nhau và `code` trở
+ * thành vô nghĩa. Hệ quả: giáo viên mất tệp kết quả là mất luôn bộ đề, bấm trộn lại chỉ
+ * ra một bộ khác và bảng đáp án cũ không dùng để chấm được nữa.
+ *
+ * Nay pipeline bốc MỘT seed cho cả bộ đề, ghi nó vào tệp ghi chú trong zip, và nhận lại
+ * được qua tham số `seed` của /api/shuffle để tái tạo (xem src/services/shuffle-pipeline.ts).
+ */
 export function shuffleExamData(
   parts: Record<number, Question[]>,
   code: number,
