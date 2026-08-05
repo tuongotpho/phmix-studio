@@ -462,7 +462,29 @@ export async function generateTnmakerAnswersAndQr(all_keys: Record<number, Recor
       const mergedQrBuffer = await QRCode.toBuffer(mergedQrString, { type: 'png', width: 500, margin: 2, color: { dark: '#000000', light: '#ffffff' } });
       resultZip.addFile("MaQR_ChamDiem_TNMaker.png", mergedQrBuffer);
     } catch (qrErr) {
+      // KHÔNG nuốt lỗi. Trước đây ở đây chỉ có console.error, nên khi chuỗi đáp án
+      // vượt sức chứa QR (2953 byte) thì tệp zip vẫn tải về bình thường mà thiếu hẳn
+      // MaQR_ChamDiem_TNMaker.png — giáo viên chỉ phát hiện lúc chấm bài, không có
+      // lấy một dòng cảnh báo. Mất tính năng âm thầm còn tệ hơn báo lỗi thẳng.
+      //
+      // Zip là tệp nhị phân nên không chèn được thông báo vào phần thân HTTP; đặt
+      // ghi chú NGAY TRONG tệp zip là chỗ chắc chắn người dùng nhìn thấy.
       console.error("Error generating TNMaker QR code:", qrErr);
+
+      const note = [
+        'KHÔNG TẠO ĐƯỢC MÃ QR CHẤM ĐIỂM TNMAKER',
+        '',
+        `Lý do: ${(qrErr as any)?.message || qrErr}`,
+        `Số mã đề trong lần tạo này: ${codes.length}`,
+        `Độ dài chuỗi đáp án: ${mergedQrString.length} ký tự (mã QR chứa tối đa khoảng 2953 ký tự).`,
+        '',
+        'Bộ đề và các tệp đáp án khác trong thư mục này VẪN DÙNG ĐƯỢC bình thường.',
+        'Chỉ riêng tệp MaQR_ChamDiem_TNMaker.png bị thiếu.',
+        '',
+        'Cách xử lý: giảm số mã đề mỗi lần tạo, hoặc rút ngắn nội dung đáp án ở',
+        'Phần III (trả lời ngắn) — đáp án càng dài thì chuỗi QR càng phình to.'
+      ].join('\n');
+      resultZip.addFile('LUU_Y_THIEU_MA_QR.txt', Buffer.from('﻿' + note, 'utf-8'));
     }
   }
 }

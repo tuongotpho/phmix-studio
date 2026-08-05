@@ -1,6 +1,5 @@
 import express, { Router } from 'express';
 import AdmZip from 'adm-zip';
-import { DOMParser } from '@xmldom/xmldom';
 import QRCode from 'qrcode';
 import { shuffleLimiter } from '../middlewares/limiters.js';
 import { attachVerifiedUser } from '../middlewares/auth.js';
@@ -9,6 +8,7 @@ import { exportTnmakerExcel, generateKeyTableDoc, buildModifiedDocxZip, generate
 import { parseExam, shuffleExamData, exportShuffledXml } from '../../shuffler.js';
 import { generateBankExamDocxFromXml } from '../../bank-shuffler.js';
 import { DEFAULT_PROJECT_ID, DEFAULT_DATABASE_ID } from '../config/env.js';
+import { MAX_CODES_PER_REQUEST } from '../config/limits.js';
 
 export const bankRouter = Router();
 
@@ -63,8 +63,8 @@ bankRouter.post('/shuffle-bank', attachVerifiedUser, shuffleLimiter, express.jso
       return;
     }
 
-    if (numCodes > 100) {
-      res.status(400).json({ error: 'Số lượng mã đề tối đa mỗi lần tạo là 100.' });
+    if (numCodes > MAX_CODES_PER_REQUEST) {
+      res.status(400).json({ error: `Số lượng mã đề tối đa mỗi lần tạo là ${MAX_CODES_PER_REQUEST}.` });
       return;
     }
 
@@ -102,7 +102,7 @@ bankRouter.post('/shuffle-bank', attachVerifiedUser, shuffleLimiter, express.jso
     }
 
     const examData = parseExam(documentXmlText, {});
-    const parsedTemplateDoc = new DOMParser().parseFromString(documentXmlText, 'text/xml');
+    // Truyền chuỗi XML, không parse sẵn thành DOM — xem giải thích ở exam.shuffle.ts.
 
     const hasFooterFiles = baseDocxEntries.some(entry =>
       entry.entryName.startsWith('word/footer') && entry.entryName.endsWith('.xml')
@@ -130,7 +130,7 @@ bankRouter.post('/shuffle-bank', attachVerifiedUser, shuffleLimiter, express.jso
         examData.header_elements,
         examData.footer_elements,
         examData.part_headers,
-        parsedTemplateDoc,
+        documentXmlText,
         false,
         String(code),
         hasFooterFiles
@@ -144,7 +144,7 @@ bankRouter.post('/shuffle-bank', attachVerifiedUser, shuffleLimiter, express.jso
         examData.header_elements,
         examData.footer_elements,
         examData.part_headers,
-        parsedTemplateDoc,
+        documentXmlText,
         true,
         String(code),
         hasFooterFiles

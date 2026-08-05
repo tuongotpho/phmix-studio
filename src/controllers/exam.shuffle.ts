@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
 import AdmZip from 'adm-zip';
 import QRCode from 'qrcode';
-import { DOMParser } from '@xmldom/xmldom';
 import { getUserRole, userLastCodeStartCache } from '../services/auth.service.js';
 import { exportTnmakerExcel, generateKeyTableDoc, buildModifiedDocxZip, generateTnmakerAnswersAndQr } from '../services/export.service.js';
 import { parseExam, shuffleExamData, exportShuffledXml } from '../../shuffler.js';
 import path from 'path';
 import { DEFAULT_PROJECT_ID, DEFAULT_DATABASE_ID } from '../config/env.js';
+import { checkArchiveLimits } from '../services/docx-archive.js';
+import { MAX_CODES_PER_REQUEST } from '../config/limits.js';
 
 // POST endpoint for validating exam structure and finding unanswered questions
 
@@ -70,12 +71,18 @@ export const shuffleExam = async (req: Request, res: Response) => {
             res.status(403).json({ error: 'Tài khoản chưa được kích hoạt bản PRO! Bản dùng thử giới hạn tối đa 2 mã đề.' });
             return;
         }
-        if (num_codes > 100) {
-            res.status(400).json({ error: 'Số lượng mã đề trực tuyến tối đa mỗi lần tạo là 100 để đảm bảo hiệu năng tối ưu.' });
+        if (num_codes > MAX_CODES_PER_REQUEST) {
+            res.status(400).json({ error: `Số lượng mã đề trực tuyến tối đa mỗi lần tạo là ${MAX_CODES_PER_REQUEST} để đảm bảo hiệu năng tối ưu.` });
             return;
         }
         // Load the original docx as a zip package to read word/document.xml
         const docxZip = new AdmZip(file.buffer);
+        // Trước vòng lặp pre-extract bên dưới: nó gọi getData() cho MỌI entry.
+        const tooLarge = checkArchiveLimits(docxZip);
+        if (tooLarge) {
+            res.status(400).json({ error: tooLarge });
+            return;
+        }
         const documentXmlEntry = docxZip.getEntry("word/document.xml");
         if (!documentXmlEntry) {
             res.status(400).json({ error: 'Tệp docx không đúng cấu trúc (không tìm thấy word/document.xml).' });
@@ -108,8 +115,15 @@ export const shuffleExam = async (req: Request, res: Response) => {
         }
         // Parse elements with optional overrides
         const examData = parseExam(documentXmlText, overrides);
-        // Pre-parse template DOM document once to avoid re-parsing raw XML strings in each loop
-        const parsedTemplateDoc = new DOMParser().parseFromString(documentXmlText, 'text/xml');
+        // Truyền THẲNG CHUỖI XML cho exportShuffledXml, đừng parse sẵn thành DOM.
+        //
+        // Trước đây ở đây parse sẵn một lần "to avoid re-parsing raw XML strings in each
+        // loop". Suy luận nghe hợp lý nhưng ngược với thực tế: mỗi mã đề vẫn cần một cây
+        // DOM sạch riêng, và exportShuffledXml lấy nó bằng cloneNode(true) — mà trong
+        // @xmldom/xmldom, deep-clone phải dựng lại từng node bằng JS thuần nên CHẬM HƠN
+        // parse lại từ chuỗi 2,3 lần (159ms so với 69ms mỗi lượt, đo trên đề 220KB).
+        // Đổi sang truyền chuỗi: nhanh hơn 21% và output giống nhau từng byte
+        // (xem tests/export-template.test.ts).
         // Create target output zip
         const resultZip = new AdmZip();
         const codes = [];
@@ -124,11 +138,11 @@ export const shuffleExam = async (req: Request, res: Response) => {
             const { shuffled_parts, key_map } = shuffleExamData(examData.parts, code, null, shuffle_questions, shuffle_choices, shuffle_statements);
             all_keys[code] = key_map;
             // Student version
-            const studentXml = exportShuffledXml(shuffled_parts, examData.header_elements, examData.footer_elements, examData.part_headers, parsedTemplateDoc, false, String(code), hasFooterFiles);
+            const studentXml = exportShuffledXml(shuffled_parts, examData.header_elements, examData.footer_elements, examData.part_headers, documentXmlText,false, String(code), hasFooterFiles);
             const studentDocxBuffer = buildModifiedDocxZip(baseDocxEntries, studentXml, String(code));
             resultZip.addFile(`De_HocSinh_${code}.docx`, studentDocxBuffer);
             // Teacher version
-            const teacherXml = exportShuffledXml(shuffled_parts, examData.header_elements, examData.footer_elements, examData.part_headers, parsedTemplateDoc, true, String(code), hasFooterFiles);
+            const teacherXml = exportShuffledXml(shuffled_parts, examData.header_elements, examData.footer_elements, examData.part_headers, documentXmlText,true, String(code), hasFooterFiles);
             const teacherDocxBuffer = buildModifiedDocxZip(baseDocxEntries, teacherXml, String(code));
             resultZip.addFile(`De_GiaoVien_${code}_CoDapAn.docx`, teacherDocxBuffer);
         }

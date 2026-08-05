@@ -1,9 +1,23 @@
 # Firebase App Hosting Configuration
 runConfig:
-  minInstances: 0
+  # 1 thay vì 0: người dùng đầu tiên sau giờ vắng khách không phải chờ cold start.
+  minInstances: 1
   maxInstances: 10
-  concurrency: 20
+
+  # PHẢI là 1. Trộn đề là việc CPU-bound (94% thời gian nằm trong exportShuffledXml,
+  # là JavaScript đồng bộ) trên một luồng Node duy nhất với cpu: 1 — không có luồng
+  # thứ hai để chia. concurrency cao chỉ hợp với web I/O-bound, ở đây nó phản tác dụng:
+  # Cloud Run chỉ tạo instance mới khi instance hiện tại VƯỢT ngưỡng này, nên để 20
+  # đồng nghĩa 20 người đầu bị dồn vào MỘT instance một vCPU trong khi 9 instance còn
+  # lại nằm không — maxInstances trở nên vô dụng.
+  #
+  # Đo thực tế (24 mã đề, gui/demau_1.docx), mỗi request tốn ~25s CPU:
+  #   concurrency 20 → 10 người cùng lúc: ai cũng chờ ~240s, phần lớn timeout
+  #   concurrency 1  → 10 người cùng lúc: 10 instance song song, mỗi người ~25s
+  concurrency: 1
+
   cpu: 1
+  # RAM không phải nút thắt ở mức 24 mã đề: đo được 227MB cho 1 request.
   memoryMiB: 1024
 
 # Biến môi trường. Thiếu ADMIN_EMAIL là mọi route /api/admin/* trả 403 dù giao
