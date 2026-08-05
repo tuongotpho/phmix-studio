@@ -6,7 +6,7 @@
     "dev": "tsx watch server.ts",
     "start": "node dist/server.js",
     "build": "tsc",
-    "test": "tsx --test tests/**/*.test.ts",
+    "test": "tsx --test tests/*.test.ts",
     "test:rules": "firebase emulators:exec --project demo-phmix --only firestore \"tsx --test tests/rules/*.spec.ts\"",
     "lint": "tsc --noEmit"
   },
