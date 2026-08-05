@@ -22,6 +22,41 @@ function cloneElement(el: any, doc: any): any {
   return doc.importNode(el, true);
 }
 
+/**
+ * Gắn dấu phân cách giữa hai phương án vào cuối đoạn.
+ *
+ * Khi đề gốc TỰ KHAI mốc tab, phải giữ luôn SỐ tab của từng khe chứ không chỉ giữ
+ * danh sách mốc: tác giả đặt mốc cho đúng số tab họ đã gõ. Trước đây chỗ này luôn
+ * dựng lại đúng MỘT tab mỗi khe trong khi vẫn giữ nguyên mốc, nên một đoạn khai 7
+ * mốc mà chỉ còn 3 tab sẽ đẩy B/C/D dồn về ba mốc đầu và bỏ trống nửa cuối dòng.
+ * (Đo trên đề thật: 6/8 câu single_para bị lệch, đúng những câu tác giả gõ nhiều
+ * hơn một tab mỗi khe; hai câu gõ đều 1 tab thì không sao.)
+ *
+ * originalSeparators đánh theo VỊ TRÍ chứ không theo phương án — 'A' là khe 0, 'B'
+ * là khe 1... — nên sau khi trộn, phương án nào rơi vào vị trí đó cũng nhận đúng
+ * khoảng cách cũ. Đây chính là "lưới đo theo vị trí" mà phần dưới đã mô tả.
+ *
+ * Đề gốc KHÔNG khai mốc thì giữ nguyên hành vi cũ: applyEvenTabStops đã chia cột
+ * đều và một tab mỗi khe là đúng với lưới đó. Ngăn bằng dấu cách cũng rơi vào nhánh
+ * này — dấu cách không ăn theo mốc tab nên phải thay bằng tab thật.
+ */
+function appendSeparator(
+  p_elm: any,
+  posIndex: number,
+  posLabels: string[],
+  originalSeparators: Record<string, any[]>,
+  keepOriginal: boolean,
+  breakAfter: boolean[],
+  doc: any
+): void {
+  const original = originalSeparators[posLabels[posIndex]] || [];
+  if (keepOriginal && original.length > 0) {
+    original.forEach(node => p_elm.appendChild(node));
+    return;
+  }
+  p_elm.appendChild(createSeparatorRun(doc, posIndex, breakAfter));
+}
+
 export function shuffleExamData(
   parts: Record<number, Question[]>,
   code: number,
@@ -283,7 +318,10 @@ export function exportShuffledXml(
           const break_after = labels.map(pos_char => separatorHasBreak(original_separators[pos_char]));
           const columns = columnsFromBreaks(break_after, 4);
           // Đề gốc tự đặt mốc tab thì giữ nguyên — đó chính là cách dàn tác giả muốn.
-          if (!hasExplicitTabStops(p_elm)) {
+          // Phải đọc TRƯỚC applyEvenTabStops: hàm đó tự thêm mốc vào pPr, gọi lại
+          // hasExplicitTabStops sau đó sẽ luôn trả true.
+          const hadExplicitTabStops = hasExplicitTabStops(p_elm);
+          if (!hadExplicitTabStops) {
             applyEvenTabStops(p_elm, doc, columns, usable_width);
           }
 
@@ -298,7 +336,7 @@ export function exportShuffledXml(
             });
 
             if (new_idx < 3) {
-              p_elm.appendChild(createSeparatorRun(doc, new_idx, break_after));
+              appendSeparator(p_elm, new_idx, labels, original_separators, hadExplicitTabStops, break_after, doc);
             }
           });
         } else if (layout === "four_paras") {
@@ -359,7 +397,8 @@ export function exportShuffledXml(
           const columns_p1 = columnsFromBreaks(break_p1, 2);
           const columns_p2 = columnsFromBreaks(break_p2, 2);
 
-          if (!hasExplicitTabStops(p1_elm)) {
+          const p1HadExplicitTabStops = hasExplicitTabStops(p1_elm);
+          if (!p1HadExplicitTabStops) {
             applyEvenTabStops(p1_elm, doc, columns_p1, usable_width);
           }
 
@@ -374,7 +413,8 @@ export function exportShuffledXml(
             });
 
             if (new_idx === 0) {
-              p1_elm.appendChild(createSeparatorRun(doc, new_idx, break_p1));
+              // Khe duy nhất của đoạn này nằm ở vị trí của A trong đề gốc.
+              appendSeparator(p1_elm, new_idx, ['A', 'B'], original_separators, p1HadExplicitTabStops, break_p1, doc);
             }
           });
 
@@ -389,7 +429,8 @@ export function exportShuffledXml(
             }
           });
 
-          if (!hasExplicitTabStops(p2_elm)) {
+          const p2HadExplicitTabStops = hasExplicitTabStops(p2_elm);
+          if (!p2HadExplicitTabStops) {
             applyEvenTabStops(p2_elm, doc, columns_p2, usable_width);
           }
 
@@ -404,7 +445,8 @@ export function exportShuffledXml(
             });
 
             if (new_idx === 0) {
-              p2_elm.appendChild(createSeparatorRun(doc, new_idx, break_p2));
+              // Đoạn hai chỉ có khe C|D — vị trí của C trong đề gốc.
+              appendSeparator(p2_elm, new_idx, ['C', 'D'], original_separators, p2HadExplicitTabStops, break_p2, doc);
             }
           });
 
