@@ -33,7 +33,9 @@ Create a `.env` file based on `.env.example`:
 - **Admin API** (`/src/routes/admin.routes.ts`): user management runs server-side through the Firebase Admin SDK, because security rules deliberately forbid clients from reading or writing other users' profiles. Endpoints: `GET /api/admin/users`, `POST /api/admin/users/:uid/role`, `POST /api/admin/users/:uid/admin`, `DELETE /api/admin/users/:uid`. Deleting a user removes both the Authentication account and the Firestore profile.
 
 ### Project IDs
-Auth, Firestore and Storage live in **`phmix-studio`**; Hosting lives in **`phmix-web`**. `FIREBASE_PROJECT_ID` must match `firebaseConfig.projectId` in `gui/index.html` — if they differ, every ID token fails verification and PRO users silently drop to `guest`. Verify the running value with `GET /ping`.
+Everything lives in a single project, **`phmix-studio`**: Auth, Firestore, Storage, and the App Hosting backend that serves both the API and the static pages. `FIREBASE_PROJECT_ID` must match `firebaseConfig.projectId` in `gui/index.html` — if they differ, every ID token fails verification and PRO users silently drop to `guest`. Verify the running value with `GET /ping`.
+
+The separate `phmix-web` project and its Firebase Hosting site are no longer used. Hosting used to sit in front as a rewrite to Cloud Run, which added a second CDN hop and capped requests at Hosting's 60s timeout — bad for exam shuffling, which is a long single request. App Hosting talks to Cloud Run directly (300s), and a tidy domain comes from attaching a custom domain to the App Hosting backend rather than routing through Hosting.
 
 ### Admin privileges
 Admin rights come from the Firebase custom claim `admin`, granted server-side — never by the client. On startup the server grants that claim to `ADMIN_EMAIL` (idempotent). This requires the Cloud Run service account to hold:
@@ -53,8 +55,11 @@ firebase deploy --only firestore:rules,storage
 ```
 
 ## Deployment
-1. Setup Firebase Hosting & App Hosting / Cloud Run for the Express server.
-2. The project includes a GitHub Action (`.github/workflows/firebase-hosting.yml`) which automatically runs `npm install`, `npm run build`, `npm run test`, and deploys to Firebase Hosting on push to the main branch.
+Firebase App Hosting deploys on its own, via its GitHub integration — configured in the Firebase console, not in this repo. Pushing to the tracked branch is all it takes; there is no deploy step in CI.
+
+`.github/workflows/ci.yml` only runs `npm install`, `npm run build` and `npm run test`. It is a gate, not a deploy pipeline.
+
+Capacity is set in `apphosting.yaml`. `concurrency` must stay at 1: shuffling is CPU-bound on Node's single thread, and Cloud Run only scales out once a backend exceeds its concurrency setting — a high value pins every request onto one instance while the rest sit idle. See the comments in that file for the measurements behind it, and `src/config/limits.ts` for why the per-request cap is 24 exam codes.
 
 ## License
 MIT License.

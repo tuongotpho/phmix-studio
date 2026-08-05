@@ -1,6 +1,5 @@
 {
   "projects": {
-    "default": "phmix-studio",
-    "hosting": "phmix-web"
+    "default": "phmix-studio"
   }
 }

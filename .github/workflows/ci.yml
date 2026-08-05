@@ -1,0 +1,35 @@
+# Chỉ kiểm tra, KHÔNG deploy.
+#
+# Việc deploy do Firebase App Hosting tự làm qua tích hợp GitHub của nó (cấu hình
+# trong Firebase console, không nằm trong repo này). Workflow cũ
+# firebase-hosting.yml deploy Firebase Hosting sang project phmix-web — đường đó
+# đã bỏ: landing page do chính Express phục vụ (server.ts), và tên miền gọn sẽ
+# gắn thẳng vào App Hosting bằng custom domain thay vì đi vòng qua Hosting.
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Project
+        run: npm run build
+
+      - name: Run Tests
+        run: npm run test
