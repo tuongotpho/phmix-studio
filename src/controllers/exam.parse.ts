@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import AdmZip from 'adm-zip';
 import { DOMParser, XMLSerializer } from '@xmldom/xmldom';
 import { parseExam, getNodeTextWithMediaAndMath, getElementsByTagNameLocal } from '../../shuffler.js';
+import { checkArchiveLimits } from '../services/docx-archive.js';
 
 // POST endpoint for validating exam structure and finding unanswered questions
 
@@ -13,6 +14,12 @@ export const parseDocx = async (req: Request, res: Response) => {
         }
         const file = req.file;
         const docxZip = new AdmZip(file.buffer);
+        // Phải chạy TRƯỚC mọi getData(): bên dưới toàn bộ word/media/ được base64 vào RAM.
+        const tooLarge = checkArchiveLimits(docxZip);
+        if (tooLarge) {
+            res.status(400).json({ error: tooLarge });
+            return;
+        }
         const documentXmlEntry = docxZip.getEntry("word/document.xml");
         if (!documentXmlEntry) {
             res.status(400).json({ error: 'Tệp docx không đúng cấu trúc (không tìm thấy word/document.xml).' });
