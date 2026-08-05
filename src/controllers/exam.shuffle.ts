@@ -8,6 +8,7 @@ import path from 'path';
 import { DEFAULT_PROJECT_ID, DEFAULT_DATABASE_ID } from '../config/env.js';
 import { checkArchiveLimits } from '../services/docx-archive.js';
 import { MAX_CODES_PER_REQUEST } from '../config/limits.js';
+import { buildShuffleNote, SHUFFLE_NOTE_FILENAME } from '../services/shuffle-notes.js';
 
 // POST endpoint for validating exam structure and finding unanswered questions
 
@@ -154,6 +155,13 @@ export const shuffleExam = async (req: Request, res: Response) => {
         resultZip.addFile("Dap_An_TNMaker.xlsx", excelBuffer);
         // Generate TNMaker QR codes using the official JSON-based format
         await generateTnmakerAnswersAndQr(all_keys, resultZip);
+        // Câu không đọc được cấu trúc thì engine bỏ qua khâu trộn cho riêng nó, im lặng.
+        // Endpoint này không trả warnings về client (chỉ /api/validate trả), nên ghi chú
+        // phải nằm trong chính tệp zip.
+        const shuffleNote = buildShuffleNote(examData);
+        if (shuffleNote) {
+            resultZip.addFile(SHUFFLE_NOTE_FILENAME, Buffer.from('﻿' + shuffleNote, 'utf-8'));
+        }
         // Save successful code start for next validation per user
         userLastCodeStartCache.set(userKey, code_start);
         // Write zip

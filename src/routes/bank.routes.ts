@@ -9,6 +9,7 @@ import { parseExam, shuffleExamData, exportShuffledXml } from '../../shuffler.js
 import { generateBankExamDocxFromXml } from '../../bank-shuffler.js';
 import { DEFAULT_PROJECT_ID, DEFAULT_DATABASE_ID } from '../config/env.js';
 import { MAX_CODES_PER_REQUEST } from '../config/limits.js';
+import { buildShuffleNote, SHUFFLE_NOTE_FILENAME } from '../services/shuffle-notes.js';
 
 export const bankRouter = Router();
 
@@ -161,6 +162,12 @@ bankRouter.post('/shuffle-bank', attachVerifiedUser, shuffleLimiter, express.jso
     resultZip.addFile("Dap_An_TNMaker.xlsx", excelBuffer);
 
     await generateTnmakerAnswersAndQr(all_keys, resultZip);
+    // Đề gốc ở đây do chính máy chủ dựng nên hiếm khi hỏng cấu trúc, nhưng nếu có thì
+    // giáo viên cũng phải biết — xem src/services/shuffle-notes.ts.
+    const shuffleNote = buildShuffleNote(examData);
+    if (shuffleNote) {
+      resultZip.addFile(SHUFFLE_NOTE_FILENAME, Buffer.from('﻿' + shuffleNote, 'utf-8'));
+    }
 
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', 'attachment; filename="Bo_De_Tron_Tu_Ngan_Hang.zip"');
