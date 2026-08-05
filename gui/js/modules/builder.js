@@ -1,4 +1,4 @@
-import { addLog, renderSafeHTML, showAlertDialog, renderMath, getAuthHeaders } from '../utils/ui-helpers.js';
+import { addLog, renderSafeHTML, showAlertDialog, renderMath, getAuthHeaders, escapeHTML } from '../utils/ui-helpers.js';
 import { bankQuestionsCache } from './bank.js';
 
 export let builderQuestions = [];
@@ -56,7 +56,7 @@ function renderFilteredBuilderQuestions(preservePage = false) {
         
         item.innerHTML = `
             <div style="display: flex; justify-content: flex-start; align-items: flex-start; gap: 8px;">
-                <input type="checkbox" class="builder-q-checkbox" data-id="${q.id}" ${isChecked} style="margin-top: 4px;">
+                <input type="checkbox" class="builder-q-checkbox" data-id="${escapeHTML(q.id)}" ${isChecked} style="margin-top: 4px;">
                 <div style="flex: 1;">
                     <div style="font-weight: bold; font-size: 12px; margin-bottom: 4px; color: var(--accent);">Câu ${questionIndex} (${typeLabel}):</div>
                     <div style="font-size: 12px; line-height: 1.4;">${renderSafeHTML(q.questionText)}</div>

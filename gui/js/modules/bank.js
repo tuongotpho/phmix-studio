@@ -160,7 +160,10 @@ export async function loadQuestionBank() {
         bankQuestionsCache = [];
         bankSelectedIds.clear();
         snapshot.forEach(docSnap => {
-            bankQuestionsCache.push({ id: docSnap.id, ...docSnap.data() });
+            // SEC: spread TRƯỚC rồi mới gán id. Đảo lại thì một field `id` nằm trong
+            // document sẽ đè mất docSnap.id — và với câu hỏi công khai của người khác,
+            // giá trị đó do họ tự đặt rồi chảy thẳng vào data-id="${q.id}" khi render.
+            bankQuestionsCache.push({ ...docSnap.data(), id: docSnap.id });
         });
 
         renderQuestionBankList();
@@ -266,7 +269,7 @@ export function renderQuestionBankList(preservePage = false) {
             optionsHtml = `<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; font-size: 11px; background: #f9fafb; padding: 6px; border-radius: 4px;">`;
             q.options.forEach(opt => {
                 const isAns = opt.isCorrect || opt.id === q.correctAnswer;
-                const letter = opt.letter || opt.id || '';
+                const letter = escapeHTML(opt.letter || opt.id || '');
                 const text = renderSafeHTML(opt.text || opt.content || '');
                 optionsHtml += `<span style="${isAns ? 'font-weight: bold; color: #16a34a; text-decoration: underline;' : 'opacity: 0.8;'}">${letter}. ${text}</span>`;
             });
@@ -274,7 +277,7 @@ export function renderQuestionBankList(preservePage = false) {
         } else if (q.statements && q.statements.length > 0) {
             optionsHtml = `<div style="display: flex; flex-direction: column; gap: 2px; margin-top: 4px; font-size: 11px; background: #f9fafb; padding: 6px; border-radius: 4px;">`;
             q.statements.forEach(st => {
-                const label = st.label || st.id || '';
+                const label = escapeHTML(st.label || st.id || '');
                 const text = renderSafeHTML(st.text || st.content || '');
                 const isTrue = st.isCorrect !== undefined ? st.isCorrect : st.isTrue;
                 optionsHtml += `<div style="display: flex; justify-content: space-between;"><span>${label}) ${text}</span> <strong style="color: ${isTrue ? '#16a34a' : '#dc2626'};">[${isTrue ? 'ĐÚNG' : 'SAI'}]</strong></div>`;
@@ -287,12 +290,12 @@ export function renderQuestionBankList(preservePage = false) {
         card.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
                 <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-                    ${isMine ? `<input type="checkbox" class="bank-q-chk" data-id="${q.id}" ${isChecked ? 'checked' : ''} style="cursor: pointer; width: 15px; height: 15px; accent-color: var(--ink);">` : ''}
+                    ${isMine ? `<input type="checkbox" class="bank-q-chk" data-id="${escapeHTML(q.id)}" ${isChecked ? 'checked' : ''} style="cursor: pointer; width: 15px; height: 15px; accent-color: var(--ink);">` : ''}
                     <span style="font-size: 10px; font-weight: bold; background: ${typeBg}; color: ${typeColor}; padding: 2px 6px; border-radius: 4px;">
                         ${typeLabel}
                     </span>
                     <span style="font-size: 10px; font-weight: bold; background: ${diffBadgeColor}; color: #fff; padding: 2px 6px; border-radius: 4px;">
-                        ${diff === 'Chưa phân loại' ? '⚪ Chưa phân loại' : diff}
+                        ${diff === 'Chưa phân loại' ? '⚪ Chưa phân loại' : escapeHTML(diff)}
                     </span>
                     <span style="font-size: 11px; font-weight: bold; color: var(--ink);">Môn: ${escapeHTML(q.classification?.subject || 'Chưa phân loại')}</span>
                     <span style="font-size: 11px; opacity: 0.7;">Khối: ${escapeHTML(q.classification?.grade || 'Chưa phân loại')}</span>
@@ -455,7 +458,7 @@ export async function loadSavedExams() {
         const q = query(collection(db, "exams"), where("ownerId", "==", currentUser.uid));
         const snapshot = await getDocs(q);
         const exams = [];
-        snapshot.forEach(docSnap => exams.push({ id: docSnap.id, ...docSnap.data() }));
+        snapshot.forEach(docSnap => exams.push({ ...docSnap.data(), id: docSnap.id }));
 
         if (countText) countText.innerText = `${exams.length} đề thi trong kho`;
 
@@ -505,7 +508,7 @@ export async function loadCustomCategories() {
         const q = query(collection(db, "curriculums"), where("ownerId", "==", currentUser.uid));
         const snapshot = await getDocs(q);
         const cats = [];
-        snapshot.forEach(docSnap => cats.push({ id: docSnap.id, ...docSnap.data() }));
+        snapshot.forEach(docSnap => cats.push({ ...docSnap.data(), id: docSnap.id }));
 
         if (cats.length === 0) {
             container.innerHTML = '<div style="font-size: 12px; opacity: 0.7;">Chưa có danh mục cá nhân nào. Thầy/Cô có thể tạo thêm ở ô bên cạnh!</div>';

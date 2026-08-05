@@ -33,38 +33,32 @@ export async function getAuthHeaders(extraHeaders = {}) {
     return headers;
 }
 
+let purifyMissingLogged = false;
+
 export function renderSafeHTML(htmlStr) {
     if (!htmlStr) return '';
-    
+
+    // Thiếu DOMPurify (CDN bị chặn, SRI không khớp) thì HẠ CẤP VỀ VĂN BẢN THUẦN, không
+    // tự sanitize. Bản tự viết trước đây ở đây thủng ở cả ba mặt: chỉ so khớp chuỗi thô
+    // 'javascript:' nên lọt java&#9;script:, bỏ sót <base>/<form>/<style>, và việc
+    // sanitize trên DOM rồi trả innerHTML để nơi gọi parse lại chính là đường mXSS.
+    // Nội dung ở đây đến từ câu hỏi công khai của người dùng khác — mất định dạng
+    // chấp nhận được, chạy mã của họ thì không.
+    if (!window.DOMPurify) {
+        if (!purifyMissingLogged) {
+            purifyMissingLogged = true;
+            console.error('[Security] Không nạp được DOMPurify — nội dung câu hỏi đang hiển thị dạng văn bản thuần.');
+        }
+        return escapeHTML(htmlStr).replace(/\r\n|\r|\n/g, '<br>');
+    }
+
     // Convert newlines to <br> if not already containing HTML tags
     let processed = htmlStr;
     if (!/<[a-z][\s\S]*>/i.test(processed)) {
         processed = processed.replace(/\r\n|\r|\n/g, '<br>');
     }
 
-    if (window.DOMPurify) {
-        return window.DOMPurify.sanitize(processed);
-    }
-
-    // Fallback basic sanitizer for display
-    const temp = document.createElement('div');
-    temp.innerHTML = processed;
-    
-    const scripts = temp.querySelectorAll('script, iframe, object, embed');
-    scripts.forEach(s => s.remove());
-
-    const allEls = temp.querySelectorAll('*');
-    allEls.forEach(el => {
-        for (let i = el.attributes.length - 1; i >= 0; i--) {
-            const attrName = el.attributes[i].name;
-            const attrValue = el.attributes[i].value.toLowerCase();
-            if (attrName.startsWith('on') || attrValue.includes('javascript:')) {
-                el.removeAttribute(attrName);
-            }
-        }
-    });
-
-    return temp.innerHTML;
+    return window.DOMPurify.sanitize(processed);
 }
 
 export function renderMath() {
